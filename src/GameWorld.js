@@ -10,7 +10,7 @@ class Floor {
         this.graphics = null;
     }
 
-    async initGraphics() {
+    async initGraphics(scene) {
         const container = new PIXI.Container();
 
         const texture = await PIXI.Assets.load((await import('@/assets/ground.jpg')).default);
@@ -21,7 +21,14 @@ class Floor {
         container.addChild(sprite);
 
         this.graphics = container;
+
+        scene.addChild(container);
         return container;
+    }
+
+    renderGraphics() {
+        this.graphics.position.set(this.body.position.x, this.body.position.y);
+        this.graphics.rotation = this.body.angle;
     }
 }
 
@@ -35,22 +42,36 @@ class Player {
         this.nickname = nickname;
         this.body = body;
         this.graphics = null;
-        
+
+        this._uiGraphics = null;
+
         this._health = 100;
-        this._canJump = false;
+        this._isGrounded = false;
+        this._lastAttacker = null;
+        this._killCount = 0;
+        
+        this._lastAttackTimestamp = 0;
+        this._lastJumpTimestamp = 0;
 
         const engine = this._gameWorld.engine;
         Matter.Events.on(engine, 'collisionStart', (event) => {
             for (const pair of event.pairs) {
                 if (pair.bodyA === this.body || pair.bodyB === this.body) {
-                    this._canJump = true;
+                    this._isGrounded = true;
                 }
             }
         });
         Matter.Events.on(engine, 'collisionEnd', (event) => {
             for (const pair of event.pairs) {
                 if (pair.bodyA === this.body || pair.bodyB === this.body) {
-                    this._canJump = false;
+                    this._isGrounded = false;
+                }
+            }
+        });
+        Matter.Events.on(engine, 'collisionActive', (event) => {
+            for (const pair of event.pairs) {
+                if (pair.bodyA === this.body || pair.bodyB === this.body) {
+                    this._isGrounded = true;
                 }
             }
         });
@@ -66,7 +87,7 @@ class Player {
             this._health = 0;
         }
         if (this.graphics === null) return;
-        const healthBar = this.graphics.getChildByName('healthBar')
+        const healthBar = this._uiGraphics.getChildByName('healthBar')
         healthBar.clear();
         healthBar.beginFill(0xff0000);
         healthBar.drawRect(0, 0, 100, 10);
@@ -76,9 +97,27 @@ class Player {
         healthBar.endFill();
     }
 
-    async initGraphics() {
+    get killCount() {
+        return this._killCount;
+    }
+
+    set killCount(value) {
+        this._killCount = value;
+        if (this._uiGraphics === null) return;
+        const killCountText = this._uiGraphics.getChildByName('killCountText');
+        killCountText.text = `Kill: ${this._killCount}`;
+    }
+
+    newKill() {
+        this._killCount++;
+        if (this._uiGraphics === null) return;
+        const killCountText = this._uiGraphics.getChildByName('killCountText');
+        killCountText.text = `Kill: ${this._killCount}`;
+    }
+
+    async initGraphics(scene) {
         const container = new PIXI.Container();
-        
+
         // Bunny
         const bunnyTexture = await PIXI.Assets.load((await import('@/assets/bunny.png')).default);
         const bunny = new PIXI.Sprite(bunnyTexture);
@@ -86,6 +125,8 @@ class Player {
         bunny.width = this.body.bounds.max.x - this.body.bounds.min.x;
         bunny.height = this.body.bounds.max.y - this.body.bounds.min.y;
         container.addChild(bunny);
+
+        const uiContainer = new PIXI.Container();
 
         // Health bar
         const healthBar = new PIXI.Graphics();
@@ -97,7 +138,7 @@ class Player {
         healthBar.drawRect(0, 0, this._health, 10);
         healthBar.endFill();
         healthBar.position.set(-50, -60);
-        container.addChild(healthBar);
+        uiContainer.addChild(healthBar);
 
         // Nickname
         const nicknameText = new PIXI.Text(this.nickname, {
@@ -106,28 +147,67 @@ class Player {
         });
         nicknameText.anchor.set(0.5);
         nicknameText.position.set(0, -80);
-        container.addChild(nicknameText);
+        uiContainer.addChild(nicknameText);
 
+        this._uiGraphics = uiContainer;
         this.graphics = container;
+
+        // strike effect
+        const strikeEffect = new PIXI.Graphics();
+        strikeEffect.name = 'strikeEffect';
+        strikeEffect.beginFill(0x009999);
+        strikeEffect.drawCircle(0, 0, 200);
+        strikeEffect.endFill();
+        strikeEffect.alpha = 0;
+        this._uiGraphics.addChild(strikeEffect);
+
+        // kill count
+        const killCountText = new PIXI.Text('Kill: 0', {
+            fill: 0xffffff,
+            align: 'center',
+            fontSize: 14,
+        });
+        killCountText.name = 'killCountText';
+        killCountText.anchor.set(0.5);
+        killCountText.position.set(0, -120);
+        uiContainer.addChild(killCountText);
+
+        scene.addChild(container);
+        scene.addChild(uiContainer);
         return container;
     }
 
+    disposeGraphics(scene) {
+        scene.removeChild(this.graphics);
+        scene.removeChild(this._uiGraphics);
+    }
+
+    renderGraphics() {
+        this.graphics.position.set(this.body.position.x, this.body.position.y);
+        this.graphics.rotation = this.body.angle;
+        this._uiGraphics.position.set(this.body.position.x, this.body.position.y - 20);
+    }
+
     moveForward() {
-        //Matter.Body.setVelocity(this.body, { x: 10, y: this.body.velocity.y });
-        Matter.Body.applyForce(this.body, this.body.position, { x: 0.05, y: 0 });
+        Matter.Body.setVelocity(this.body, { x: 10, y: this.body.velocity.y });
+        //Matter.Body.applyForce(this.body, this.body.position, { x: 0.1, y: 0 });
     }
 
     moveBackward() {
-        //Matter.Body.setVelocity(this.body, { x: -10, y: this.body.velocity.y });
-        Matter.Body.applyForce(this.body, this.body.position, { x: -0.05, y: 0 });
+        Matter.Body.setVelocity(this.body, { x: -10, y: this.body.velocity.y });
+        //Matter.Body.applyForce(this.body, this.body.position, { x: -0.1, y: 0 });
     }
 
     jump() {
-        if (this._canJump)
+        if (Date.now() - this._lastJumpTimestamp < 80) return;
+        if (this._isGrounded) {
             Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.3 });
+            this._lastJumpTimestamp = Date.now();
+        }
     }
 
     attack() {
+        if (Date.now() - this._lastAttackTimestamp < 1000) return;
         const gameWorld = this._gameWorld;
         const player = this;
         for (const otherPlayer of gameWorld.getPlayers()) {
@@ -142,8 +222,20 @@ class Player {
             const fy = force * Math.sin(angle);
             Matter.Body.applyForce(otherPlayer.body, otherPlayer.body.position, { x: fx, y: fy });
             otherPlayer.health -= 10;
+            otherPlayer._lastAttacker = player;
         }
-
+        this._lastAttackTimestamp = Date.now();
+        if (this._uiGraphics === null) return;
+        const strikeEffect = this._uiGraphics.getChildByName('strikeEffect');
+        strikeEffect.alpha = 1;
+        const tween = new PIXI.Ticker();
+        tween.add((delta) => {
+            strikeEffect.alpha -= 0.1 * delta;
+            if (strikeEffect.alpha <= 0) {
+                tween.stop();
+            }
+        });
+        tween.start();
     }
 }
 
@@ -184,13 +276,21 @@ export default class GameWorld {
     }
 
     start(tickRate = 20) {
+        // build terrain
         this.addFloor(0, 600, 2000, 300);
+        this.addFloor(0, 500, 80, 300);
 
-        let lastTime  = Date.now();
+        this.addFloor(0, 0, 80, 80);
+        this.addFloor(160, 0, 80, 80);
+        this.addFloor(320, 0, 80, 80);
+        this.addFloor(480, 0, 80, 80);
+        this.addFloor(640, 0, 80, 80);
+
+        let lastTime = Date.now();
         const tick = () => {
             const currTime = 0.001 * Date.now();
             Matter.Engine.update(this._engine, 1000 / tickRate, lastTime ? currTime / lastTime : 1);
-            lastTime  = currTime;
+            lastTime = currTime;
             // check any player is out of the world
             const players = this.getPlayers();
             for (const player of players) {
@@ -200,9 +300,21 @@ export default class GameWorld {
                     Matter.Body.setAngle(player.body, 0);
                     Matter.Body.setAngularVelocity(player.body, 0);
                     Matter.Body.setAngularSpeed(player.body, 0);
+                    player.killCount = 0;
                     player.health = 100;
+                    if (player._lastAttacker) {
+                        player._lastAttacker.health = 100;
+                        player._lastAttacker.newKill();
+                        console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
+                            new Date().toISOString(),
+                            player._lastAttacker.nickname,
+                            player._lastAttacker.id,
+                            player.nickname,
+                            player.id
+                        );
+                    }
                 }
-                
+
             }
         }
 

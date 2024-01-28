@@ -50,28 +50,48 @@ io.on('connection', (socket) => {
                     case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
                         const id = packet.readString();
                         gameWorld.playerMoveForward(id);
-                        broadcastWorldEvent('packet', new GamePacket().writeInt16(PACKET_TYPE.WORLD_EVENT).writeInt16(PACKET_TYPE.PLAYER_MOVE_FORWARD).writeString(id).getData());
+                        broadcastWorldEvent('packet', new GamePacket()
+                            .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                            .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD)
+                            .writeString(id)
+                            .getData()
+                        );
                         console.log('[%s] Player \"%s\" move forward', moment().format('YYYY-MM-DD HH:mm:ss'), id);
                         break;
                     }
                     case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                         const id = packet.readString();
                         gameWorld.playerMoveBackward(id);
-                        broadcastWorldEvent('packet', new GamePacket().writeInt16(PACKET_TYPE.WORLD_EVENT).writeInt16(PACKET_TYPE.PLAYER_MOVE_BACKWARD).writeString(id).getData());
+                        broadcastWorldEvent('packet', new GamePacket()
+                            .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                            .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD)
+                            .writeString(id)
+                            .getData()
+                        );
                         console.log('[%s] Player \"%s\" move backward', moment().format('YYYY-MM-DD HH:mm:ss'), id);
                         break;
                     }
                     case WORLD_EVENT.PLAYER_JUMP: {
                         const id = packet.readString();
                         gameWorld.playerJump(id);
-                        broadcastWorldEvent('packet', new GamePacket().writeInt16(PACKET_TYPE.WORLD_EVENT).writeInt16(PACKET_TYPE.PLAYER_JUMP).writeString(id).getData());
+                        broadcastWorldEvent('packet', new GamePacket()
+                            .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                            .writeInt16(WORLD_EVENT.PLAYER_JUMP)
+                            .writeString(id)
+                            .getData()
+                        );
                         console.log('[%s] Player \"%s\" jump', moment().format('YYYY-MM-DD HH:mm:ss'), id);
                         break;
                     }
                     case WORLD_EVENT.PLAYER_ATTACK: {
                         const id = packet.readString();
                         gameWorld.playerAttack(id);
-                        broadcastWorldEvent('packet', new GamePacket().writeInt16(PACKET_TYPE.WORLD_EVENT).writeInt16(PACKET_TYPE.PLAYER_ATTACK).writeString(id).getData());
+                        broadcastWorldEvent('packet', new GamePacket()
+                            .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                            .writeInt16(WORLD_EVENT.PLAYER_ATTACK)
+                            .writeString(id)
+                            .getData()
+                        );
                         console.log('[%s] Player \"%s\" attack', moment().format('YYYY-MM-DD HH:mm:ss'), id);
                         break;
                     }
@@ -106,10 +126,11 @@ const syncAllPlayers = () => {
         packet.writeFloat32(player.body.velocity.x);
         packet.writeFloat32(player.body.velocity.y);
         packet.writeInt32(player.health);
+        packet.writeInt32(player.killCount);
     }
     broadcastWorldEvent('packet', packet.getData());
 }
-setInterval(syncAllPlayers, 1);
+setInterval(syncAllPlayers, 0);
 
 setInterval(() => {
     console.log('[%s] Players: %s', moment().format('YYYY-MM-DD HH:mm:ss'), gameWorld.getPlayers().length);

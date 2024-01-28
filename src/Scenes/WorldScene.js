@@ -210,7 +210,7 @@ class WorldScene extends PIXI.Container {
 
         const gameWorld = new GameWorld();
 
-        gameWorld.start(170);
+        gameWorld.start(120);
 
         socketio.on('packet', async (data) => {
             const packet = new GamePacket(data);
@@ -257,21 +257,21 @@ class WorldScene extends PIXI.Container {
                         const vx = packet.readFloat32();
                         const vy = packet.readFloat32();
                         const health = packet.readInt32();
-                        serverPlayers.push({ id, nickname, x, y, angle, angleVelocity, angularSpeed, vx, vy, health });
+                        const killCount = packet.readInt32();
+                        serverPlayers.push({ id, nickname, killCount, x, y, angle, angleVelocity, angularSpeed, vx, vy, health });
                     }
                     // Add new players
                     for (const player of serverPlayers) {
                         if (clientPlayers.find(p => p.id === player.id)) continue;
                         const newPlayer = gameWorld.addPlayer(player.id, player.nickname);
-                        await newPlayer.initGraphics();
-                        this.addChild(newPlayer.graphics);
+                        await newPlayer.initGraphics(this);
                         this._renderObjects.push(newPlayer);
                     }
                     // Remove old players
                     for (const player of clientPlayers) {
                         if (serverPlayers.find(p => p.id === player.id)) continue;
                         gameWorld.removePlayer(player.id);
-                        this.removeChild(player.graphics);
+                        player.disposeGraphics(this);
                         this._renderObjects = this._renderObjects.filter(o => o.id !== player.id);
                     }
                     // Update client players to server players
@@ -284,6 +284,7 @@ class WorldScene extends PIXI.Container {
                         Matter.Body.setAngularSpeed(player.body, serverPlayer.angularSpeed);
                         Matter.Body.setVelocity(player.body, { x: serverPlayer.vx, y: serverPlayer.vy });
                         player.health = serverPlayer.health;
+                        player.killCount = serverPlayer.killCount;
                     }
                     break;
                 }
@@ -295,15 +296,13 @@ class WorldScene extends PIXI.Container {
 
         for (const floor of floors) {
             console.log('floor', floor);
-            await floor.initGraphics();
-            this.addChild(floor.graphics);
+            await floor.initGraphics(this);
             this._renderObjects.push(floor);
         }
 
         for (const player of players) {
             console.log('player', player);
-            await player.initGraphics();
-            this.addChild(player.graphics);
+            await player.initGraphics(this);
             this._renderObjects.push(player);
         }
 
@@ -315,7 +314,8 @@ class WorldScene extends PIXI.Container {
         this._keyboard = await import('pixi.js-keyboard');
 
         // init pixi.js
-        this._camera = { x: this.x, y: this.y };
+        this._camera = { x: this.x, y: this.y};
+        this.scale.set(0.9);
 
         this._isInitWorld = true;
     }
@@ -348,8 +348,7 @@ class WorldScene extends PIXI.Container {
 
         const renderObjects = this._renderObjects
         for (const object of renderObjects) {
-            object.graphics.position.set(object.body.position.x, object.body.position.y);
-            object.graphics.rotation = object.body.angle;
+            object.renderGraphics();
         }
 
         this.targetCameraToSprite(this._world.getPlayer(this._app.socketio.id)?.graphics);
