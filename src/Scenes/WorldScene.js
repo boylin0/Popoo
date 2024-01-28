@@ -4,6 +4,8 @@ import * as PIXI from 'pixi.js';
 import { Application, Assets, Sprite } from 'pixi.js';
 
 import Matter from 'matter-js';
+import GameWorld from '@/GameWorld';
+import GamePacket from '@/GamePacket';
 
 class GameObject {
     constructor(x, y, width, height) {
@@ -192,9 +194,9 @@ class WorldScene extends PIXI.Container {
 
     constructor(app) {
         super();
-        /** @type {Application} */
+        /** @type {import('@/app/App').GameApplication} */
         this._app = app;
-        this._bodies = [];
+        this._renderObjects = [];
         this._myBunny = null;
         this._camera = { x: 0, y: 0 };
         this._isInitWorld = false;
@@ -203,44 +205,113 @@ class WorldScene extends PIXI.Container {
     }
 
     async initScene() {
-        // init matter.js
-        const engine = Matter.Engine.create();
-        const world = engine.world;
 
-        const ground = new Ground(400, 610, 3000, 60, { isStatic: true });
-        const myBunny = new Bunny(400, 300, 80, 80);
+        const socketio = this._app.socketio;
 
-        await ground.init();
-        await myBunny.init();
-        myBunny.setGround(engine);
+        socketio.emit('join_world');
+        const gameWorld = new GameWorld();
 
-        Matter.World.add(world, [
-            ground.matterBody,
-            myBunny.matterBody
-        ]);
+        gameWorld.start();
 
-        this._keyboard = await import('pixi.js-keyboard');
+        socketio.on('sync_world', async (data) => {
+            const packet = new GamePacket(data);
+            const clientPlayers = gameWorld.getPlayers();
+            const serverPlayers = [];
+            const serverPlayerCount = packet.readInt8();
+            for (let i = 0; i < serverPlayerCount; i++) {
+                const id = packet.readString();
+                const x = packet.readFloat32();
+                const y = packet.readFloat32();
+                const angle = packet.readFloat32();
+                const vx = packet.readFloat32();
+                const vy = packet.readFloat32();
+                serverPlayers.push({ id, x, y, angle, vx, vy });
+            }
+            // Add new players
+            for (const player of serverPlayers) {
+                if (clientPlayers.find(p => p.id === player.id)) continue;
+                const newPlayer = gameWorld.addPlayer(player.id);
+                await newPlayer.initGraphics();
+                this.addChild(newPlayer.graphics);
+                this._renderObjects.push(newPlayer);
+            }
+            // Remove old players
+            for (const player of clientPlayers) {
+                if (serverPlayers.find(p => p.id === player.id)) continue;
+                gameWorld.removePlayer(player.id);
+                this.removeChild(player.graphics);
+                this._renderObjects = this._renderObjects.filter(o => o.id !== player.id);
+            }
+            // Update client players to server players
+            for (const player of clientPlayers) {
+                const serverPlayer = serverPlayers.find(p => p.id === player.id);
+                if (!serverPlayer) continue;
+                Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
+                Matter.Body.setAngle(player.body, serverPlayer.angle);
+                Matter.Body.setVelocity(player.body, { x: serverPlayer.vx, y: serverPlayer.vy });
+            }
+        });
 
-        for (let i = 0; i < 10; i++) {
-            const bunny = new Bunny(400 + i * 100, 300, 80, 80);
-            await bunny.init();
-            Matter.World.add(world, bunny.matterBody);
-            this._bodies.push(bunny);
-            this.addChild(bunny.sprite);
+        socketio.on('world_event', async (event) => {
+            const {
+                type,
+                data,
+            } = event;
+            switch (type) {
+                case 'remove_player': {
+                    const { id } = data;
+                    gameWorld.removePlayer(id);
+                    break;
+                }
+                case 'player_move_forward': {
+                    const { id } = data;
+                    gameWorld.playerMoveForward(id);
+                    break;
+                }
+                case 'player_move_backward': {
+                    const { id } = data;
+                    gameWorld.playerMoveBackward(id);
+                    break;
+                }
+                case 'player_jump': {
+                    const { id } = data;
+                    gameWorld.playerJump(id);
+                    break;
+                }
+                case 'player_attack': {
+                    const { id } = event.data;
+                    gameWorld.playerAttack(id);
+                    break;
+                }
+            }
+        });
+
+        const floors = gameWorld.getFloors();
+        const players = gameWorld.getPlayers();
+
+        for (const floor of floors) {
+            console.log('floor', floor);
+            await floor.initGraphics();
+            this.addChild(floor.graphics);
+            this._renderObjects.push(floor);
         }
 
+        for (const player of players) {
+            console.log('player', player);
+            await player.initGraphics();
+            this.addChild(player.graphics);
+            this._renderObjects.push(player);
+        }
+
+        //this._myBunny = gameWorld.get
+
+        this._world = gameWorld;
+
+        /** @type {Keyboard} */
+        this._keyboard = await import('pixi.js-keyboard');
+
         // init pixi.js
-        this._myBunny = myBunny;
         this._camera = { x: this.x, y: this.y };
-
-        this.addChild(ground.sprite);
-        this.addChild(myBunny.sprite);
-        this._bodies.push(ground);
-        this._bodies.push(myBunny);
-
-        setInterval(function () {
-            Matter.Engine.update(engine, 1000 / 120);
-        }, 1000 / 120);
 
         this._isInitWorld = true;
     }
@@ -249,7 +320,8 @@ class WorldScene extends PIXI.Container {
      * 
      * @param {Sprite} sprite
      */
-    targetCameraToSprite(sprite) {
+    targetCameraToSprite(sprite, speed = 0.01) {
+        if (!sprite) return;
         this._camera.x = -sprite.position.x + this._app.renderer.width / 2;
         this._camera.y = -sprite.position.y + this._app.renderer.height / 2;
         // move gradually
@@ -257,7 +329,6 @@ class WorldScene extends PIXI.Container {
             const dx = this._camera.x - this.x;
             const dy = this._camera.y - this.y;
             const d = Math.sqrt(dx * dx + dy * dy);
-            const speed = 0.03;
             if (d < speed) {
                 this.x = this._camera.x;
                 this.y = this._camera.y;
@@ -271,39 +342,42 @@ class WorldScene extends PIXI.Container {
     update(dt) {
         if (!this._isInitWorld) return;
 
-
-        const bodies = this._bodies
-        for (const body of bodies) {
-            body.update();
+        const renderObjects = this._renderObjects
+        for (const object of renderObjects) {
+            object.graphics.position.set(object.body.position.x, object.body.position.y);
+            object.graphics.rotation = object.body.angle;
         }
 
-        this.targetCameraToSprite(this._myBunny.sprite);
+        this.targetCameraToSprite(this._world.getPlayer(this._app.socketio.id)?.graphics);
 
-        if (this._keyboard.isKeyDown('ArrowLeft')) {
-            this._myBunny.moveForward();
-        }
-        if (this._keyboard.isKeyDown('ArrowRight')) {
-            this._myBunny.moveBackward();
+        const world = this._world;
+        if (this._keyboard.isKeyPressed('ArrowLeft')) {
+            world.playerMoveBackward(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_move_backward', data: { id: this._app.socketio.id } });
+        } else if (this._keyboard.isKeyReleased('ArrowLeft')) {
+            world.playerMoveBackward(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_move_backward_end', data: { id: this._app.socketio.id } });
         }
 
-        if (this._keyboard.isKeyDown('ArrowUp')) {
-            if (this._myBunny.canJump()) {
-                this._myBunny.jump();
-                console.log('jump')
-            }
+        if (this._keyboard.isKeyPressed('ArrowRight')) {
+            world.playerMoveForward(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_move_forward', data: { id: this._app.socketio.id } });
+        } else if (this._keyboard.isKeyReleased('ArrowRight')) {
+            world.playerMoveForward(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_move_forward_end', data: { id: this._app.socketio.id } });
         }
+
+        if (this._keyboard.isKeyPressed('ArrowUp')) {
+            world.playerJump(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_jump', data: { id: this._app.socketio.id } });
+        } else if (this._keyboard.isKeyReleased('ArrowUp')) {
+            world.playerJump(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_jump_end', data: { id: this._app.socketio.id } });
+        }
+
         if (this._keyboard.isKeyPressed('Space')) {
-            if (this._myBunny.canAttack()) {
-                this._myBunny.attack(bodies);
-            }
-        }
-
-        for (const body of bodies) {
-            if (!body instanceof Bunny) continue
-            if (body.health === 0 || body.matterBody.position.y > 1000) {
-                Matter.Body.setPosition(body.matterBody, { x: 400, y: 300 });
-                body.health = 100;
-            }
+            world.playerAttack(this._app.socketio.id);
+            this._app.socketio.emit('world_event', { type: 'player_attack', data: { id: this._app.socketio.id } });
         }
 
         this._keyboard.update();

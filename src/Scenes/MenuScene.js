@@ -9,7 +9,7 @@ class MenuScene extends PIXI.Container {
 
     constructor(app) {
         super();
-        /** @type {Application} */
+        /** @type {import('@/app/App').GameApplication} */
         this._app = app;
         this._playButton = null;
         this._titleSprite = null;
@@ -37,8 +37,6 @@ class MenuScene extends PIXI.Container {
         playButton.eventMode = 'static'
         playButton.buttonMode = true;
         playButton.on('pointerdown', () => {
-            const socket = this._app.socketio;
-            socket.emit('join_world');
             this.destroy();
             const worldScene = new WorldScene(this._app);
             this._app.stage.addChild(worldScene);

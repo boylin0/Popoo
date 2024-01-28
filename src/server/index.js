@@ -1,7 +1,8 @@
 import { Server } from 'socket.io';
 import moment from 'moment';
 
-import Matter from 'matter-js';
+import GameWorld from '../GameWorld.js';
+import GamePacket from '../GamePacket.js';
 
 const io = new Server(8888, {
     cors: {
@@ -9,98 +10,71 @@ const io = new Server(8888, {
     },
 });
 
-class GameWorld {
-
-    constructor() {
-        this._players = [];
-        this._engine = Matter.Engine.create();
-    }
-
-    getPlayers() {
-        return this._players;
-    }
-
-    addPlayer(id) {
-        const player = {
-            id,
-            body: Matter.Bodies.rectangle(0, 0, 50, 50),
-        };
-        Matter.World.add(this._engine.world, player.body);
-        this._players.push(player);
-    }
-
-    removePlayer(id) {
-        const player = this._players.find(player => player.id === id);
-        if (!player) return;
-        Matter.World.remove(this._engine.world, player.body);
-        this._players = this._players.filter(player => player.id !== id);
-    }
-
-    playerMoveForward(id) {
-        const player = this._players.find(player => player.id === id);
-        if (!player) return;
-        Matter.Body.applyForce(player.body, player.body.position, { x: 0.01, y: 0 });
-    }
-
-    playerMoveBackward(id) {
-        const player = this._players.find(player => player.id === id);
-        if (!player) return;
-        Matter.Body.applyForce(player.body, player.body.position, { x: -0.01, y: 0 });
-    }
-
-    playerJump(id) {
-        const player = this._players.find(player => player.id === id);
-        if (!player) return;
-        Matter.Body.applyForce(player.body, player.body.position, { x: 0, y: -0.05 });
-    }
-
-    playerAttack(id) {
-        const player = this._players.find(player => player.id === id);
-        if (!player) return;
-        Matter.Body.applyForce(player.body, player.body.position, { x: 0, y: 0 });
-    }
-
-    getSyncData() {
-        return {
-            players: this._players.map(player => ({
-                id: player.id,
-                position: player.body.position,
-                angle: player.body.angle,
-            })),
-        };
-    }
-
-}
-
 const gameWorld = new GameWorld();
+
+gameWorld.start();
+
+gameWorld.addPlayer('player1');
+
+let sockets = [];
+
+function broadcastWorldEvent(event, data) {
+    for (const socket of sockets) {
+        socket.emit(event, data);
+    }
+}
 
 io.on('connection', (socket) => {
 
+
     console.log('[%s] Connected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
+    sockets.push(socket);
 
     socket.on('disconnect', () => {
         console.log('[%s] Disconnected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
         gameWorld.removePlayer(socket.id);
+        sockets = sockets.filter(s => s.id !== socket.id);
     });
 
     socket.on('join_world', () => {
         gameWorld.addPlayer(socket.id);
     });
 
-    socket.on('player_action', (action) => {
-        switch (action) {
-            case 'move_forward':
-                gameWorld.playerMoveForward(socket.id);
+    socket.on('ping', () => {
+        socket.emit('pong');
+    });
+
+    socket.on('world_event', (action) => {
+        const {
+            type,
+            data,
+        } = action;
+        console.log('[%s] World event: %s', moment().format('YYYY-MM-DD HH:mm:ss'), type, data);
+        switch (type) {
+            case 'player_move_forward': {
+                const { id } = data;
+                gameWorld.playerMoveForward(id);
+                broadcastWorldEvent('world_event', { type: 'move_forward', data: { id } });
                 break;
-            case 'move_backward':
-                gameWorld.playerMoveBackward(socket.id);
+            }
+            case 'player_move_backward': {
+                const { id } = data;
+                gameWorld.playerMoveBackward(id);
+                broadcastWorldEvent('world_event', { type: 'move_backward', data: { id } });
                 break;
-            case 'jump':
-                gameWorld.playerJump(socket.id);
+            }
+            case 'player_jump': {
+                const { id } = data;
+                gameWorld.playerJump(id);
+                broadcastWorldEvent('world_event', { type: 'jump', data: { id } });
                 break;
-            case 'attack':
-                gameWorld.playerAttack(socket.id);
+            }
+            case 'player_attack': {
+                const { id } = data;
+                gameWorld.playerAttack(id);
+                broadcastWorldEvent('world_event', { type: 'attack', data: { id } });
                 break;
+            }
         }
     });
 
@@ -111,10 +85,20 @@ io.on('connection', (socket) => {
 //
 const syncAllPlayers = () => {
     const players = gameWorld.getPlayers();
+    const packet = new GamePacket();
+    packet.writeInt8(players.length);
     for (const player of players) {
-        const socket = io.sockets.sockets.get(player.id);
-        if (!socket) continue;
-        socket.emit('sync_world', gameWorld.getSyncData());
+        packet.writeString(player.id);
+        packet.writeFloat32(player.body.position.x);
+        packet.writeFloat32(player.body.position.y);
+        packet.writeFloat32(player.body.angle);
+        packet.writeFloat32(player.body.velocity.x);
+        packet.writeFloat32(player.body.velocity.y);
     }
+    broadcastWorldEvent('sync_world', packet.getData());
 }
-setInterval(syncAllPlayers, 1000 / 10);
+setInterval(syncAllPlayers, 1000);
+
+setInterval(() => {
+    console.log('[%s] Players: %s', moment().format('YYYY-MM-DD HH:mm:ss'), gameWorld.getPlayers().length);
+}, 3000);
