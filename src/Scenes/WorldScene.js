@@ -210,7 +210,7 @@ class WorldScene extends PIXI.Container {
 
         const gameWorld = new GameWorld();
 
-        gameWorld.start(120);
+        gameWorld.start(60);
 
         socketio.on('packet', async (data) => {
             const packet = new GamePacket(data);
@@ -221,21 +221,25 @@ class WorldScene extends PIXI.Container {
                     switch (event) {
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
                             const id = packet.readString();
+                            if (id === socketio.id) break;
                             gameWorld.playerMoveForward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
+                            if (id === socketio.id) break;
                             gameWorld.playerMoveBackward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_JUMP: {
                             const id = packet.readString();
+                            if (id === socketio.id) break;
                             gameWorld.playerJump(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_ATTACK: {
                             const id = packet.readString();
+                            if (id === socketio.id) break;
                             gameWorld.playerAttack(id);
                             break;
                         }
