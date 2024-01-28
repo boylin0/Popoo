@@ -63,7 +63,7 @@ export default function App() {
 
     useEffect(() => {
         // Init Socket.io
-        const socket = io('localhost:8888');
+        const socket = io(window.location.hostname + ':8888');
         socket.on('connect', () => {
             initGame(socket);
         });

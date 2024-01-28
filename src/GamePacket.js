@@ -1,8 +1,26 @@
+export const PACKET_TYPE = {
+    JOIN_WORLD: 0,
+    UPDATE_PLAYER: 1,
+    SYNC_WORLD: 2,
+    WORLD_EVENT: 3,
+};
+
+export const WORLD_EVENT = {
+    PLAYER_MOVE_FORWARD: 0,
+    PALYER_MOVE_FORWARD_END: 1,
+    PLAYER_MOVE_BACKWARD: 2,
+    PLAYER_MOVE_BACKWARD_END: 3,
+    PLAYER_JUMP: 4,
+    PLAYER_JUMP_END: 5,
+    PLAYER_ATTACK: 6,
+}
+
 export default class GamePacket {
 
     constructor(data) {
         this._data = data ? [...new Uint8Array(data)] : [];
         this._offset = 0;
+        return this;
     }
 
     getData() {
@@ -32,6 +50,7 @@ export default class GamePacket {
         }
         this._data.push(value);
         this._offset += 1;
+        return this;
     }
 
     writeInt16(value) {
@@ -41,6 +60,7 @@ export default class GamePacket {
         this._data.push(value & 0xFF);
         this._data.push((value >> 8) & 0xFF);
         this._offset += 2;
+        return this;
     }
 
     writeInt32(value) {
@@ -52,6 +72,7 @@ export default class GamePacket {
         this._data.push((value >> 16) & 0xFF);
         this._data.push((value >> 24) & 0xFF);
         this._offset += 4;
+        return this;
     }
 
     writeFloat32(value) {
@@ -60,6 +81,7 @@ export default class GamePacket {
         view.setFloat32(0, value, true);
         this._data.push(...new Uint8Array(buffer));
         this._offset += 4;
+        return this;
     }
 
     writeFloat64(value) {
@@ -68,6 +90,7 @@ export default class GamePacket {
         view.setFloat64(0, value, true);
         this._data.push(...new Uint8Array(buffer));
         this._offset += 8;
+        return this;
     }
 
     writeString(value) {
@@ -75,6 +98,7 @@ export default class GamePacket {
         this.writeInt16(buffer.length);
         this._data.push(...buffer);
         this._offset += buffer.length;
+        return this;
     }
 
     readInt8() {

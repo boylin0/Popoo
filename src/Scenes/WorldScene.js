@@ -5,7 +5,7 @@ import { Application, Assets, Sprite } from 'pixi.js';
 
 import Matter from 'matter-js';
 import GameWorld from '@/GameWorld';
-import GamePacket from '@/GamePacket';
+import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/GamePacket';
 
 class GameObject {
     constructor(x, y, width, height) {
@@ -208,79 +208,83 @@ class WorldScene extends PIXI.Container {
 
         const socketio = this._app.socketio;
 
-        socketio.emit('join_world');
         const gameWorld = new GameWorld();
 
-        gameWorld.start();
+        gameWorld.start(170);
 
-        socketio.on('sync_world', async (data) => {
+        socketio.on('packet', async (data) => {
             const packet = new GamePacket(data);
-            const clientPlayers = gameWorld.getPlayers();
-            const serverPlayers = [];
-            const serverPlayerCount = packet.readInt8();
-            for (let i = 0; i < serverPlayerCount; i++) {
-                const id = packet.readString();
-                const x = packet.readFloat32();
-                const y = packet.readFloat32();
-                const angle = packet.readFloat32();
-                const vx = packet.readFloat32();
-                const vy = packet.readFloat32();
-                serverPlayers.push({ id, x, y, angle, vx, vy });
-            }
-            // Add new players
-            for (const player of serverPlayers) {
-                if (clientPlayers.find(p => p.id === player.id)) continue;
-                const newPlayer = gameWorld.addPlayer(player.id);
-                await newPlayer.initGraphics();
-                this.addChild(newPlayer.graphics);
-                this._renderObjects.push(newPlayer);
-            }
-            // Remove old players
-            for (const player of clientPlayers) {
-                if (serverPlayers.find(p => p.id === player.id)) continue;
-                gameWorld.removePlayer(player.id);
-                this.removeChild(player.graphics);
-                this._renderObjects = this._renderObjects.filter(o => o.id !== player.id);
-            }
-            // Update client players to server players
-            for (const player of clientPlayers) {
-                const serverPlayer = serverPlayers.find(p => p.id === player.id);
-                if (!serverPlayer) continue;
-                Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
-                Matter.Body.setAngle(player.body, serverPlayer.angle);
-                Matter.Body.setVelocity(player.body, { x: serverPlayer.vx, y: serverPlayer.vy });
-            }
-        });
-
-        socketio.on('world_event', async (event) => {
-            const {
-                type,
-                data,
-            } = event;
+            const type = packet.readInt16();
             switch (type) {
-                case 'remove_player': {
-                    const { id } = data;
-                    gameWorld.removePlayer(id);
+                case PACKET_TYPE.WORLD_EVENT: {
+                    const event = packet.readInt16();
+                    switch (event) {
+                        case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
+                            const id = packet.readString();
+                            gameWorld.playerMoveForward(id);
+                            break;
+                        }
+                        case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
+                            const id = packet.readString();
+                            gameWorld.playerMoveBackward(id);
+                            break;
+                        }
+                        case WORLD_EVENT.PLAYER_JUMP: {
+                            const id = packet.readString();
+                            gameWorld.playerJump(id);
+                            break;
+                        }
+                        case WORLD_EVENT.PLAYER_ATTACK: {
+                            const id = packet.readString();
+                            gameWorld.playerAttack(id);
+                            break;
+                        }
+                    }
                     break;
                 }
-                case 'player_move_forward': {
-                    const { id } = data;
-                    gameWorld.playerMoveForward(id);
-                    break;
-                }
-                case 'player_move_backward': {
-                    const { id } = data;
-                    gameWorld.playerMoveBackward(id);
-                    break;
-                }
-                case 'player_jump': {
-                    const { id } = data;
-                    gameWorld.playerJump(id);
-                    break;
-                }
-                case 'player_attack': {
-                    const { id } = event.data;
-                    gameWorld.playerAttack(id);
+                case PACKET_TYPE.SYNC_WORLD: {
+                    const clientPlayers = gameWorld.getPlayers();
+                    const serverPlayers = [];
+                    const serverPlayerCount = packet.readInt8();
+                    for (let i = 0; i < serverPlayerCount; i++) {
+                        const id = packet.readString();
+                        const nickname = packet.readString();
+                        const x = packet.readFloat32();
+                        const y = packet.readFloat32();
+                        const angle = packet.readFloat32();
+                        const angleVelocity = packet.readFloat32();
+                        const angularSpeed = packet.readFloat32();
+                        const vx = packet.readFloat32();
+                        const vy = packet.readFloat32();
+                        const health = packet.readInt32();
+                        serverPlayers.push({ id, nickname, x, y, angle, angleVelocity, angularSpeed, vx, vy, health });
+                    }
+                    // Add new players
+                    for (const player of serverPlayers) {
+                        if (clientPlayers.find(p => p.id === player.id)) continue;
+                        const newPlayer = gameWorld.addPlayer(player.id, player.nickname);
+                        await newPlayer.initGraphics();
+                        this.addChild(newPlayer.graphics);
+                        this._renderObjects.push(newPlayer);
+                    }
+                    // Remove old players
+                    for (const player of clientPlayers) {
+                        if (serverPlayers.find(p => p.id === player.id)) continue;
+                        gameWorld.removePlayer(player.id);
+                        this.removeChild(player.graphics);
+                        this._renderObjects = this._renderObjects.filter(o => o.id !== player.id);
+                    }
+                    // Update client players to server players
+                    for (const player of clientPlayers) {
+                        const serverPlayer = serverPlayers.find(p => p.id === player.id);
+                        if (!serverPlayer) continue;
+                        Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
+                        Matter.Body.setAngle(player.body, serverPlayer.angle);
+                        Matter.Body.setAngularVelocity(player.body, serverPlayer.angleVelocity);
+                        Matter.Body.setAngularSpeed(player.body, serverPlayer.angularSpeed);
+                        Matter.Body.setVelocity(player.body, { x: serverPlayer.vx, y: serverPlayer.vy });
+                        player.health = serverPlayer.health;
+                    }
                     break;
                 }
             }
@@ -320,7 +324,7 @@ class WorldScene extends PIXI.Container {
      * 
      * @param {Sprite} sprite
      */
-    targetCameraToSprite(sprite, speed = 0.01) {
+    targetCameraToSprite(sprite, speed = 0.03) {
         if (!sprite) return;
         this._camera.x = -sprite.position.x + this._app.renderer.width / 2;
         this._camera.y = -sprite.position.y + this._app.renderer.height / 2;
@@ -353,31 +357,73 @@ class WorldScene extends PIXI.Container {
         const world = this._world;
         if (this._keyboard.isKeyPressed('ArrowLeft')) {
             world.playerMoveBackward(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_move_backward', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD)
+                .writeString(socketio.id)
+                .getData()
+            );
         } else if (this._keyboard.isKeyReleased('ArrowLeft')) {
             world.playerMoveBackward(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_move_backward_end', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD_END)
+                .writeString(socketio.id)
+                .getData()
+            );
         }
 
         if (this._keyboard.isKeyPressed('ArrowRight')) {
             world.playerMoveForward(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_move_forward', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD)
+                .writeString(socketio.id)
+                .getData()
+            );
         } else if (this._keyboard.isKeyReleased('ArrowRight')) {
             world.playerMoveForward(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_move_forward_end', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD_END)
+                .writeString(socketio.id)
+                .getData()
+            );
         }
 
         if (this._keyboard.isKeyPressed('ArrowUp')) {
             world.playerJump(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_jump', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_JUMP)
+                .writeString(socketio.id)
+                .getData()
+            );
         } else if (this._keyboard.isKeyReleased('ArrowUp')) {
             world.playerJump(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_jump_end', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_JUMP_END)
+                .writeString(socketio.id)
+                .getData()
+            );
         }
 
         if (this._keyboard.isKeyPressed('Space')) {
             world.playerAttack(this._app.socketio.id);
-            this._app.socketio.emit('world_event', { type: 'player_attack', data: { id: this._app.socketio.id } });
+            const socketio = this._app.socketio;
+            socketio.emit('packet', new GamePacket()
+                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                .writeInt16(WORLD_EVENT.PLAYER_ATTACK)
+                .writeString(socketio.id)
+                .getData()
+            );
         }
 
         this._keyboard.update();
