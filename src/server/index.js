@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
         switch (type) {
             case PACKET_TYPE.JOIN_WORLD: {
                 const nickname = packet.readString();
-                gameWorld.addPlayer(socket.id, nickname);
+                gameWorld.addPlayer(socket.id, nickname.substring(0, 12));
                 console.log('[%s] Player \"%s\" joined the world', moment().format('YYYY-MM-DD HH:mm:ss'), nickname);
                 break;
             }
@@ -114,7 +114,7 @@ const syncAllPlayers = () => {
     const players = gameWorld.getPlayers();
     const packet = new GamePacket();
     packet.writeInt16(PACKET_TYPE.SYNC_WORLD);
-    packet.writeInt8(players.length);
+    packet.writeInt32(players.length);
     for (const player of players) {
         packet.writeString(player.id);
         packet.writeString(player.nickname);
@@ -133,5 +133,6 @@ const syncAllPlayers = () => {
 setInterval(syncAllPlayers, 0);
 
 setInterval(() => {
+    console.log('[%s] avgTickTime: %s ms', moment().format('YYYY-MM-DD HH:mm:ss'), gameWorld.avgTickTime);
     console.log('[%s] Players: %s', moment().format('YYYY-MM-DD HH:mm:ss'), gameWorld.getPlayers().length);
 }, 3000);

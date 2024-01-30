@@ -21,7 +21,7 @@ class MenuScene extends PIXI.Container {
     async _initScene() {
 
         // game title
-        const titleTexture = await Assets.load((await import('@/assets/bunny.png')).default);
+        const titleTexture = await Assets.load((await import('@/assets/bunny-0.png')).default);
         const titleSprite = new Sprite(titleTexture);
         titleSprite.anchor.set(0.5);
         titleSprite.position.set(this._app.renderer.width / 2, this._app.renderer.height / 2 - 200);
@@ -39,6 +39,7 @@ class MenuScene extends PIXI.Container {
         nameInput.style.transform = 'translate(-50%, -50%)';
         nameInput.style.width = '300px';
         nameInput.style.height = '50px';
+        nameInput.maxLength = 12;
         nameInput.style.borderRadius = '10px';
         nameInput.style.border = 'none';
         nameInput.style.padding = '10px';

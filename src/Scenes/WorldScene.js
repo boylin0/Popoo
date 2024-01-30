@@ -45,7 +45,7 @@ class Ground extends GameObject {
     }
 
     async init() {
-        const gameObjectTexture = await Assets.load((await import('@/assets/ground.jpg')).default);
+        const gameObjectTexture = await Assets.load((await import('@/assets/floor.jpg')).default);
         const gameObjectSprite = new Sprite(gameObjectTexture);
         gameObjectSprite.anchor.set(0.5);
         gameObjectSprite.position.set(this._position.x, this._position.y);
@@ -73,7 +73,7 @@ class Bunny extends GameObject {
     async init() {
         const container = new PIXI.Container();
 
-        const bunnyTexture = await Assets.load((await import('@/assets/bunny.png')).default);
+        const bunnyTexture = await Assets.load((await import('@/assets/bunny-0.png')).default);
         const bunny = new Sprite(bunnyTexture);
         bunny.anchor.set(0.5);
         bunny.width = this._matterBody.bounds.max.x - this._matterBody.bounds.min.x;
@@ -249,7 +249,7 @@ class WorldScene extends PIXI.Container {
                 case PACKET_TYPE.SYNC_WORLD: {
                     const clientPlayers = gameWorld.getPlayers();
                     const serverPlayers = [];
-                    const serverPlayerCount = packet.readInt8();
+                    const serverPlayerCount = packet.readInt32();
                     for (let i = 0; i < serverPlayerCount; i++) {
                         const id = packet.readString();
                         const nickname = packet.readString();

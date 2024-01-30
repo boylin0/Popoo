@@ -1,6 +1,17 @@
 import Matter from 'matter-js';
 import * as PIXI from 'pixi.js';
 
+const Utils = {
+    loadAssets: async (imports) => {
+        const assets = await Promise.all(imports);
+        const textures = [];
+        for (const asset of assets) {
+            textures.push(await PIXI.Assets.load(asset.default));
+        }
+        return textures;
+    }
+}
+
 class Floor {
     constructor(gameWorld, x, y, width, height) {
         const body = Matter.Bodies.rectangle(x, y, width, height, { isStatic: true });
@@ -11,10 +22,16 @@ class Floor {
     }
 
     async initGraphics(scene) {
+
+        const [
+            floorTexture,
+        ] = await Utils.loadAssets([
+            import('@/assets/floor.jpg')
+        ]);
+
         const container = new PIXI.Container();
 
-        const texture = await PIXI.Assets.load((await import('@/assets/ground.jpg')).default);
-        const sprite = new PIXI.Sprite(texture);
+        const sprite = new PIXI.TilingSprite(floorTexture);
         sprite.anchor.set(0.5);
         sprite.width = this.body.bounds.max.x - this.body.bounds.min.x;
         sprite.height = this.body.bounds.max.y - this.body.bounds.min.y;
@@ -49,7 +66,7 @@ class Player {
         this._isGrounded = false;
         this._lastAttacker = null;
         this._killCount = 0;
-        
+
         this._lastAttackTimestamp = 0;
         this._lastJumpTimestamp = 0;
 
@@ -116,12 +133,23 @@ class Player {
     }
 
     async initGraphics(scene) {
+
+        // load assets
+        const bunnyTextureArray = await Utils.loadAssets([
+            import('@/assets/bunny-0.png'),
+            import('@/assets/bunny-1.png'),
+            import('@/assets/bunny-2.png'),
+            import('@/assets/bunny-3.png'),
+            import('@/assets/bunny-4.png'),
+        ]);
+
         const container = new PIXI.Container();
 
         // Bunny
-        const bunnyTexture = await PIXI.Assets.load((await import('@/assets/bunny.png')).default);
-        const bunny = new PIXI.Sprite(bunnyTexture);
+        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
         bunny.anchor.set(0.5);
+        bunny.animationSpeed = 0.1;
+        bunny.play();
         bunny.width = this.body.bounds.max.x - this.body.bounds.min.x;
         bunny.height = this.body.bounds.max.y - this.body.bounds.min.y;
         container.addChild(bunny);
@@ -244,6 +272,9 @@ export default class GameWorld {
     constructor() {
         this._engine = Matter.Engine.create();
         this._objects = [];
+        this._tickInterval = null;
+        this._tickRate = 60;
+        this.avgTickTime = 0;
     }
 
     get engine() {
@@ -286,39 +317,57 @@ export default class GameWorld {
         this.addFloor(480, 0, 80, 80);
         this.addFloor(640, 0, 80, 80);
 
+        this.setTickRateAndStartTick(tickRate);
+    }
+
+    setTickRateAndStartTick(tickRate) {
+        this._tickRate = tickRate;
         let lastTime = Date.now();
         const tick = () => {
-            const currTime = 0.001 * Date.now();
-            Matter.Engine.update(this._engine, 1000 / tickRate, lastTime ? currTime / lastTime : 1);
+            const currTime = Date.now();
+            this.updatePhiysics();
+            //Matter.Engine.update(this._engine, 1000 / tickRate * (lastTime ? currTime / lastTime : 1) , lastTime ? currTime / lastTime : 1);
+            Matter.Engine.update(this._engine, 1000 / this._tickRate, lastTime ? currTime / lastTime : 1);
+            // calculate average tick time
+            if (this.avgTickTime === 0) {
+                this.avgTickTime = currTime - lastTime;
+            } else {
+                this.avgTickTime = (this.avgTickTime + (currTime - lastTime)) / 2;
+            }
             lastTime = currTime;
-            // check any player is out of the world
-            const players = this.getPlayers();
-            for (const player of players) {
-                if (player.body.position.y > 1000 || player.health <= 0) {
-                    Matter.Body.setPosition(player.body, { x: 100, y: 100 });
-                    Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
-                    Matter.Body.setAngle(player.body, 0);
-                    Matter.Body.setAngularVelocity(player.body, 0);
-                    Matter.Body.setAngularSpeed(player.body, 0);
-                    player.killCount = 0;
-                    player.health = 100;
-                    if (player._lastAttacker) {
-                        player._lastAttacker.health = 100;
-                        player._lastAttacker.newKill();
-                        console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
-                            new Date().toISOString(),
-                            player._lastAttacker.nickname,
-                            player._lastAttacker.id,
-                            player.nickname,
-                            player.id
-                        );
-                    }
-                }
+        }
+        if (this._tickInterval) {
+            clearInterval(this._tickInterval);
+        }
+        this._tickInterval = setInterval(tick, 1000 / this._tickRate);
+    }
 
+    updatePhiysics() {
+
+        // check any player is out of the world
+        const players = this.getPlayers();
+        for (const player of players) {
+            if (player.body.position.y > 1000 || player.health <= 0) {
+                Matter.Body.setPosition(player.body, { x: 100, y: 100 });
+                Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
+                Matter.Body.setAngle(player.body, 0);
+                Matter.Body.setAngularVelocity(player.body, 0);
+                Matter.Body.setAngularSpeed(player.body, 0);
+                player.killCount = 0;
+                player.health = 100;
+                if (player._lastAttacker) {
+                    player._lastAttacker.health = 100;
+                    player._lastAttacker.newKill();
+                    console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
+                        new Date().toISOString(),
+                        player._lastAttacker.nickname,
+                        player._lastAttacker.id,
+                        player.nickname,
+                        player.id
+                    );
+                }
             }
         }
-
-        setInterval(tick, 1000 / tickRate);
     }
 
     addFloor(x, y, width, height) {
