@@ -1,6 +1,8 @@
 import Matter from 'matter-js';
 import * as PIXI from 'pixi.js';
 
+const TIMESTEP = 1000 / 60;
+
 const Utils = {
     loadAssets: async (imports) => {
         const assets = await Promise.all(imports);
@@ -274,7 +276,7 @@ export default class GameWorld {
         this._objects = [];
         this._tickInterval = null;
         this._tickRate = 60;
-        this.avgTickTime = 0;
+        this.nextTimestep = null;
     }
 
     get engine() {
@@ -295,6 +297,14 @@ export default class GameWorld {
 
     /**
      * 
+     * @returns {ItemBall[]}
+     */
+    getItemBalls() {
+        return this._objects.filter(object => object instanceof ItemBall) || [];
+    }
+
+    /**
+     * 
      * @returns {Player[]}
      */
     getPlayers() {
@@ -308,33 +318,24 @@ export default class GameWorld {
 
     start(tickRate = 20) {
         // build terrain
-        this.addFloor(0, 600, 2000, 300);
-        this.addFloor(0, 500, 80, 300);
+        this.addFloor(0, 600, 3000, 300);
 
-        this.addFloor(0, 0, 80, 80);
-        this.addFloor(160, 0, 80, 80);
-        this.addFloor(320, 0, 80, 80);
-        this.addFloor(480, 0, 80, 80);
-        this.addFloor(640, 0, 80, 80);
+        for (let i = 0; i < 10; i++) {
+            this.addFloor(-200 + i * 120, 250, 50, 50);
+        }
 
         this.setTickRateAndStartTick(tickRate);
     }
 
     setTickRateAndStartTick(tickRate) {
         this._tickRate = tickRate;
-        let lastTime = Date.now();
         const tick = () => {
-            const currTime = Date.now();
-            this.updatePhiysics();
-            //Matter.Engine.update(this._engine, 1000 / tickRate * (lastTime ? currTime / lastTime : 1) , lastTime ? currTime / lastTime : 1);
-            Matter.Engine.update(this._engine, 1000 / this._tickRate, lastTime ? currTime / lastTime : 1);
-            // calculate average tick time
-            if (this.avgTickTime === 0) {
-                this.avgTickTime = currTime - lastTime;
-            } else {
-                this.avgTickTime = (this.avgTickTime + (currTime - lastTime)) / 2;
+            this.nextTimestep = this.nextTimestep || Date.now();
+            while (Date.now() > this.nextTimestep) {
+                this.updatePhiysics();
+                Matter.Engine.update(this.engine, TIMESTEP);
+                this.nextTimestep += TIMESTEP;
             }
-            lastTime = currTime;
         }
         if (this._tickInterval) {
             clearInterval(this._tickInterval);

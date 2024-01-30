@@ -210,7 +210,7 @@ class WorldScene extends PIXI.Container {
 
         const gameWorld = new GameWorld();
 
-        gameWorld.start(60);
+        gameWorld.start(170);
 
         socketio.on('packet', async (data) => {
             const packet = new GamePacket(data);
@@ -318,7 +318,7 @@ class WorldScene extends PIXI.Container {
         this._keyboard = await import('pixi.js-keyboard');
 
         // init pixi.js
-        this._camera = { x: this.x, y: this.y};
+        this._camera = { x: this.x, y: this.y };
         this.scale.set(0.9);
 
         this._isInitWorld = true;
@@ -328,7 +328,7 @@ class WorldScene extends PIXI.Container {
      * 
      * @param {Sprite} sprite
      */
-    targetCameraToSprite(sprite, speed = 0.03) {
+    targetCameraToSprite(sprite, speed = 0.02) {
         if (!sprite) return;
         this._camera.x = -sprite.position.x + this._app.renderer.width / 2;
         this._camera.y = -sprite.position.y + this._app.renderer.height / 2;
@@ -368,7 +368,6 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowLeft')) {
-            world.playerMoveBackward(this._app.socketio.id);
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -388,7 +387,6 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowRight')) {
-            world.playerMoveForward(this._app.socketio.id);
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -408,7 +406,6 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowUp')) {
-            world.playerJump(this._app.socketio.id);
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
