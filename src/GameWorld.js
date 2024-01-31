@@ -310,7 +310,7 @@ class Player {
             const dx = otherPlayer.body.position.x - player.body.position.x;
             const dy = otherPlayer.body.position.y - player.body.position.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > 250) continue;
+            if (distance > 200) continue;
             const angle = Math.atan2(dy, dx);
             const force = 0.5;
             const fx = force * Math.cos(angle);
