@@ -1,8 +1,8 @@
 import { Server } from 'socket.io';
 import moment from 'moment';
 
-import GameWorld from '../GameWorld.js';
-import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '../GamePacket.js';
+import GameWorld from '../src/GameWorld.js';
+import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '../src/GamePacket.js';
 
 class ServerApp {
     constructor() {
