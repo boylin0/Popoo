@@ -328,33 +328,6 @@ class Player {
     }
 }
 
-const USER_ACTION = {
-    MOVE_FORWARD: 1,
-    MOVE_FORWARD_END: 2,
-    MOVE_BACKWARD: 3,
-    MOVE_BACKWARD_END: 4,
-    JUMP: 5,
-    ATTACK: 6,
-};
-
-class UserActionBuffer {
-    constructor() {
-        this._buffer = [];
-    }
-
-    push(data) {
-        this._buffer.push(data);
-    }
-
-    pop() {
-        return this._buffer.shift();
-    }
-
-    get length() {
-        return this._buffer.length;
-    }
-}
-
 export default class GameWorld {
 
     constructor() {
@@ -363,7 +336,6 @@ export default class GameWorld {
         this._tickInterval = null;
         this._tickRate = 60;
         this.nextTimestep = null;
-        this._userActionBuffer = new UserActionBuffer();
     }
 
     get engine() {
