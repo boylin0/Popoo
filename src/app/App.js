@@ -6,7 +6,7 @@ import Matter from 'matter-js';
 
 import { Application } from 'pixi.js';
 
-import MenuScene from '@/Scenes/MenuScene';
+import MenuScene from '@/scenes/MenuScene';
 
 export class GameApplication extends Application {
 
