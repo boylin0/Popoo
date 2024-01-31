@@ -198,8 +198,9 @@ class WorldScene extends PIXI.Container {
         this.targetCameraToSprite(this._world.getPlayer(this._app.socketio.id)?.graphics);
 
         const world = this._world;
+        const socketIoId = this._app.socketio.id;
         if (this._keyboard.isKeyPressed('ArrowLeft')) {
-            world.playerMoveBackward(this._app.socketio.id);
+            world.getPlayer(socketIoId).moveBackward();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -208,7 +209,7 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowLeft')) {
-            world.playerMoveBackwardEnd(this._app.socketio.id);
+            world.getPlayer(socketIoId).moveBackwardEnd();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -219,7 +220,7 @@ class WorldScene extends PIXI.Container {
         }
 
         if (this._keyboard.isKeyPressed('ArrowRight')) {
-            world.playerMoveForward(this._app.socketio.id);
+            world.getPlayer(socketIoId).moveForward();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -228,7 +229,7 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowRight')) {
-            world.playerMoveForwardEnd(this._app.socketio.id);
+            world.getPlayer(socketIoId).moveForwardEnd();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -239,7 +240,7 @@ class WorldScene extends PIXI.Container {
         }
 
         if (this._keyboard.isKeyPressed('ArrowUp')) {
-            world.playerJump(this._app.socketio.id);
+            world.getPlayer(socketIoId).jump();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -247,18 +248,10 @@ class WorldScene extends PIXI.Container {
                 .writeString(socketio.id)
                 .getData()
             );
-        } else if (this._keyboard.isKeyReleased('ArrowUp')) {
-            const socketio = this._app.socketio;
-            socketio.emit('packet', new GamePacket()
-                .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                .writeInt16(WORLD_EVENT.PLAYER_JUMP_END)
-                .writeString(socketio.id)
-                .getData()
-            );
         }
 
         if (this._keyboard.isKeyPressed('Space')) {
-            world.playerAttack(this._app.socketio.id);
+            world.getPlayer(socketIoId).attack();
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)

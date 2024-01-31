@@ -13,8 +13,7 @@ export const WORLD_EVENT = {
     PLAYER_MOVE_BACKWARD: 3,
     PLAYER_MOVE_BACKWARD_END: 4,
     PLAYER_JUMP: 5,
-    PLAYER_JUMP_END: 6,
-    PLAYER_ATTACK: 7,
+    PLAYER_ATTACK: 6,
 }
 
 export default class GamePacket {

@@ -75,7 +75,7 @@ class ServerApp {
                     switch (event) {
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
                             const id = packet.readString();
-                            this.gameWorld.playerMoveForward(id);
+                            this.gameWorld.getPlayer(id).moveForward();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()
@@ -93,7 +93,7 @@ class ServerApp {
                         }
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
                             const id = packet.readString();
-                            this.gameWorld.playerMoveForwardEnd(id);
+                            this.gameWorld.getPlayer(id).moveForwardEnd();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()
@@ -111,7 +111,7 @@ class ServerApp {
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
-                            this.gameWorld.playerMoveBackward(id);
+                            this.gameWorld.getPlayer(id).moveBackward();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()
@@ -129,7 +129,7 @@ class ServerApp {
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
                             const id = packet.readString();
-                            this.gameWorld.playerMoveBackwardEnd(id);
+                            this.gameWorld.getPlayer(id).moveBackwardEnd();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()
@@ -147,7 +147,7 @@ class ServerApp {
                         }
                         case WORLD_EVENT.PLAYER_JUMP: {
                             const id = packet.readString();
-                            this.gameWorld.playerJump(id);
+                            this.gameWorld.getPlayer(id).jump();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()
@@ -165,7 +165,7 @@ class ServerApp {
                         }
                         case WORLD_EVENT.PLAYER_ATTACK: {
                             const id = packet.readString();
-                            this.gameWorld.playerAttack(id);
+                            this.gameWorld.getPlayer(id).attack();
                             this.broadcastWorldEvent(
                                 'packet',
                                 new GamePacket()

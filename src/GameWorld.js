@@ -481,40 +481,4 @@ export default class GameWorld {
         Matter.World.remove(this._engine.world, player.body);
         this._objects = this._objects.filter(object => object !== player);
     }
-
-    playerMoveForward(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.moveForward();
-    }
-
-    playerMoveForwardEnd(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.moveForwardEnd();
-    }
-
-    playerMoveBackward(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.moveBackward();
-    }
-
-    playerMoveBackwardEnd(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.moveBackwardEnd();
-    }
-
-    playerJump(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.jump();
-    }
-
-    playerAttack(id) {
-        const player = this.getPlayer(id);
-        if (!player) return;
-        player.attack();
-    }
 }
