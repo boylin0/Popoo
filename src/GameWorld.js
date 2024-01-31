@@ -54,7 +54,7 @@ class Floor {
 
 class Player {
     constructor(gameWorld, id, nickname, x, y) {
-        const body = Matter.Bodies.rectangle(x, y, 80, 80);
+        const body = Matter.Bodies.rectangle(x, y, 80, 80, { inertia: Infinity });
         /** @type {GameWorld} */
         this._gameWorld = gameWorld;
         this.id = id;
@@ -138,22 +138,38 @@ class Player {
 
         // load assets
         const bunnyTextureArray = await Utils.loadAssets([
-            import('@/assets/bunny-0.png'),
-            import('@/assets/bunny-1.png'),
-            import('@/assets/bunny-2.png'),
-            import('@/assets/bunny-3.png'),
-            import('@/assets/bunny-4.png'),
+            import('@/assets/gavin/gavin_idle00.png'),
+            import('@/assets/gavin/gavin_idle01.png'),
+            import('@/assets/gavin/gavin_idle02.png'),
+            import('@/assets/gavin/gavin_idle03.png'),
+            import('@/assets/gavin/gavin_idle04.png'),
+            import('@/assets/gavin/gavin_idle05.png'),
+            import('@/assets/gavin/gavin_idle06.png'),
+            import('@/assets/gavin/gavin_idle07.png'),
+            import('@/assets/gavin/gavin_idle08.png'),
+            import('@/assets/gavin/gavin_idle09.png'),
+            import('@/assets/gavin/gavin_idle10.png'),
+            import('@/assets/gavin/gavin_idle11.png'),
+            import('@/assets/gavin/gavin_idle12.png'),
+            import('@/assets/gavin/gavin_idle13.png'),
+            import('@/assets/gavin/gavin_idle14.png'),
+            import('@/assets/gavin/gavin_idle15.png'),
+            import('@/assets/gavin/gavin_idle16.png'),
+            import('@/assets/gavin/gavin_idle17.png'),
+            import('@/assets/gavin/gavin_idle18.png'),
+            import('@/assets/gavin/gavin_idle19.png'),
+            import('@/assets/gavin/gavin_idle20.png'),
         ]);
 
         const container = new PIXI.Container();
 
         // Bunny
         const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
-        bunny.anchor.set(0.5);
+        bunny.anchor.set(0.5, 0.7);
         bunny.animationSpeed = 0.1;
         bunny.play();
-        bunny.width = this.body.bounds.max.x - this.body.bounds.min.x;
-        bunny.height = this.body.bounds.max.y - this.body.bounds.min.y;
+        bunny.width = 125;
+        bunny.height = 125;
         container.addChild(bunny);
 
         const uiContainer = new PIXI.Container();
@@ -269,6 +285,24 @@ class Player {
     }
 }
 
+class InputBuffer {
+    constructor() {
+        this._buffer = [];
+    }
+
+    push(data) {
+        this._buffer.push(data);
+    }
+
+    pop() {
+        return this._buffer.shift();
+    }
+
+    get length() {
+        return this._buffer.length;
+    }
+}
+
 export default class GameWorld {
 
     constructor() {
@@ -329,45 +363,41 @@ export default class GameWorld {
 
     setTickRateAndStartTick(tickRate) {
         this._tickRate = tickRate;
-        const tick = () => {
-            this.nextTimestep = this.nextTimestep || Date.now();
-            while (Date.now() > this.nextTimestep) {
-                this.updatePhiysics();
-                Matter.Engine.update(this.engine, TIMESTEP);
-                this.nextTimestep += TIMESTEP;
-            }
-        }
         if (this._tickInterval) {
             clearInterval(this._tickInterval);
         }
-        this._tickInterval = setInterval(tick, 1000 / this._tickRate);
+        this._tickInterval = setInterval(this.updatePhiysics.bind(this), 1000 / this._tickRate);
     }
 
     updatePhiysics() {
-
-        // check any player is out of the world
-        const players = this.getPlayers();
-        for (const player of players) {
-            if (player.body.position.y > 1000 || player.health <= 0) {
-                Matter.Body.setPosition(player.body, { x: 100, y: 100 });
-                Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
-                Matter.Body.setAngle(player.body, 0);
-                Matter.Body.setAngularVelocity(player.body, 0);
-                Matter.Body.setAngularSpeed(player.body, 0);
-                player.killCount = 0;
-                player.health = 100;
-                if (player._lastAttacker) {
-                    player._lastAttacker.health = 100;
-                    player._lastAttacker.newKill();
-                    console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
-                        new Date().toISOString(),
-                        player._lastAttacker.nickname,
-                        player._lastAttacker.id,
-                        player.nickname,
-                        player.id
-                    );
+        this.nextTimestep = this.nextTimestep || Date.now();
+        while (Date.now() > this.nextTimestep) {
+            // check any player is out of the world
+            const players = this.getPlayers();
+            for (const player of players) {
+                if (player.body.position.y > 1000 || player.health <= 0) {
+                    Matter.Body.setPosition(player.body, { x: 100, y: 100 });
+                    Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
+                    Matter.Body.setAngle(player.body, 0);
+                    Matter.Body.setAngularVelocity(player.body, 0);
+                    Matter.Body.setAngularSpeed(player.body, 0);
+                    player.killCount = 0;
+                    player.health = 100;
+                    if (player._lastAttacker) {
+                        player._lastAttacker.health = 100;
+                        player._lastAttacker.newKill();
+                        console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
+                            new Date().toISOString(),
+                            player._lastAttacker.nickname,
+                            player._lastAttacker.id,
+                            player.nickname,
+                            player.id
+                        );
+                    }
                 }
             }
+            Matter.Engine.update(this.engine, TIMESTEP);
+            this.nextTimestep += TIMESTEP;
         }
     }
 
