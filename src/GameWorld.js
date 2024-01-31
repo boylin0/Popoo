@@ -3,7 +3,10 @@ import * as PIXI from 'pixi.js';
 
 const TIMESTEP = 1000 / 60;
 
-const Utils = {
+export const Utils = {
+    /**
+     * @returns {Promise<PIXI.Texture[]>}
+     * */
     loadAssets: async (imports) => {
         const assets = await Promise.all(imports);
         const textures = [];
@@ -71,6 +74,11 @@ class Player {
 
         this._lastAttackTimestamp = 0;
         this._lastJumpTimestamp = 0;
+
+        this._input = {
+            forward: false,
+            backward: false,
+        };
 
         const engine = this._gameWorld.engine;
         Matter.Events.on(engine, 'collisionStart', (event) => {
@@ -229,19 +237,33 @@ class Player {
     }
 
     renderGraphics() {
+        if (this._input.backward && this.graphics.scale.x > 0) {
+            this.graphics.scale.x = -this.graphics.scale.x;
+        }
+        if (this._input.forward && this.graphics.scale.x < 0) {
+            this.graphics.scale.x = -this.graphics.scale.x;
+        }
         this.graphics.position.set(this.body.position.x, this.body.position.y);
         this.graphics.rotation = this.body.angle;
         this._uiGraphics.position.set(this.body.position.x, this.body.position.y - 20);
     }
 
     moveForward() {
-        Matter.Body.setVelocity(this.body, { x: 10, y: this.body.velocity.y });
-        //Matter.Body.applyForce(this.body, this.body.position, { x: 0.1, y: 0 });
+        //Matter.Body.setVelocity(this.body, { x: 10, y: this.body.velocity.y });
+        this._input.forward = true;
+    }
+
+    moveForwardEnd() {
+        this._input.forward = false;
     }
 
     moveBackward() {
-        Matter.Body.setVelocity(this.body, { x: -10, y: this.body.velocity.y });
-        //Matter.Body.applyForce(this.body, this.body.position, { x: -0.1, y: 0 });
+        this._input.backward = true;
+        //Matter.Body.setVelocity(this.body, { x: -10, y: this.body.velocity.y });
+    }
+
+    moveBackwardEnd() {
+        this._input.backward = false;
     }
 
     jump() {
@@ -285,7 +307,16 @@ class Player {
     }
 }
 
-class InputBuffer {
+const USER_ACTION = {
+    MOVE_FORWARD: 1,
+    MOVE_FORWARD_END: 2,
+    MOVE_BACKWARD: 3,
+    MOVE_BACKWARD_END: 4,
+    JUMP: 5,
+    ATTACK: 6,
+};
+
+class UserActionBuffer {
     constructor() {
         this._buffer = [];
     }
@@ -311,6 +342,7 @@ export default class GameWorld {
         this._tickInterval = null;
         this._tickRate = 60;
         this.nextTimestep = null;
+        this._userActionBuffer = new UserActionBuffer();
     }
 
     get engine() {
@@ -375,6 +407,14 @@ export default class GameWorld {
             // check any player is out of the world
             const players = this.getPlayers();
             for (const player of players) {
+
+                if (player._input.forward && !player._input.backward) {
+                    Matter.Body.setVelocity(player.body, { x: 10, y: player.body.velocity.y });
+                }
+                if (player._input.backward && !player._input.forward) {
+                    Matter.Body.setVelocity(player.body, { x: -10, y: player.body.velocity.y });
+                }
+
                 if (player.body.position.y > 1000 || player.health <= 0) {
                     Matter.Body.setPosition(player.body, { x: 100, y: 100 });
                     Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
@@ -427,10 +467,22 @@ export default class GameWorld {
         player.moveForward();
     }
 
+    playerMoveForwardEnd(id) {
+        const player = this.getPlayer(id);
+        if (!player) return;
+        player.moveForwardEnd();
+    }
+
     playerMoveBackward(id) {
         const player = this.getPlayer(id);
         if (!player) return;
         player.moveBackward();
+    }
+
+    playerMoveBackwardEnd(id) {
+        const player = this.getPlayer(id);
+        if (!player) return;
+        player.moveBackwardEnd();
     }
 
     playerJump(id) {

@@ -91,6 +91,24 @@ class ServerApp {
                             );
                             break;
                         }
+                        case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
+                            const id = packet.readString();
+                            this.gameWorld.playerMoveForwardEnd(id);
+                            this.broadcastWorldEvent(
+                                'packet',
+                                new GamePacket()
+                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD_END)
+                                    .writeString(id)
+                                    .getData()
+                            );
+                            console.log(
+                                '[%s] Player \"%s\" move forward end',
+                                moment().format('YYYY-MM-DD HH:mm:ss'),
+                                id
+                            );
+                            break;
+                        }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
                             this.gameWorld.playerMoveBackward(id);
@@ -104,6 +122,24 @@ class ServerApp {
                             );
                             console.log(
                                 '[%s] Player \"%s\" move backward',
+                                moment().format('YYYY-MM-DD HH:mm:ss'),
+                                id
+                            );
+                            break;
+                        }
+                        case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
+                            const id = packet.readString();
+                            this.gameWorld.playerMoveBackwardEnd(id);
+                            this.broadcastWorldEvent(
+                                'packet',
+                                new GamePacket()
+                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD_END)
+                                    .writeString(id)
+                                    .getData()
+                            );
+                            console.log(
+                                '[%s] Player \"%s\" move backward end',
                                 moment().format('YYYY-MM-DD HH:mm:ss'),
                                 id
                             );

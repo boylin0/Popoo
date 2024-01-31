@@ -4,7 +4,7 @@ import * as PIXI from 'pixi.js';
 import { Application, Assets, Sprite } from 'pixi.js';
 
 import Matter from 'matter-js';
-import GameWorld from '@/GameWorld';
+import GameWorld, { Utils } from '@/GameWorld';
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/GamePacket';
 
 class WorldScene extends PIXI.Container {
@@ -22,6 +22,17 @@ class WorldScene extends PIXI.Container {
     }
 
     async initScene() {
+
+        const [
+            backgroundTexture,
+        ] = await Utils.loadAssets([
+            import('@/assets/background.png'),
+        ]);
+
+        backgroundTexture.baseTexture.setRealSize(50, 50);
+        const background = new PIXI.TilingSprite(backgroundTexture, 10000, 10000);
+        background.anchor.set(0.5);
+        this.addChild(background);
 
         const socketio = this._app.socketio;
 
@@ -42,10 +53,22 @@ class WorldScene extends PIXI.Container {
                             gameWorld.playerMoveForward(id);
                             break;
                         }
+                        case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
+                            const id = packet.readString();
+                            if (id === socketio.id) break;
+                            gameWorld.playerMoveForwardEnd(id);
+                            break;
+                        }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
                             gameWorld.playerMoveBackward(id);
+                            break;
+                        }
+                        case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
+                            const id = packet.readString();
+                            if (id === socketio.id) break;
+                            gameWorld.playerMoveBackwardEnd(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_JUMP: {
@@ -185,6 +208,7 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowLeft')) {
+            world.playerMoveBackwardEnd(this._app.socketio.id);
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
@@ -204,6 +228,7 @@ class WorldScene extends PIXI.Container {
                 .getData()
             );
         } else if (this._keyboard.isKeyReleased('ArrowRight')) {
+            world.playerMoveForwardEnd(this._app.socketio.id);
             const socketio = this._app.socketio;
             socketio.emit('packet', new GamePacket()
                 .writeInt16(PACKET_TYPE.WORLD_EVENT)
