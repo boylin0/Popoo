@@ -21,7 +21,7 @@ class MenuScene extends PIXI.Container {
     async _initScene() {
 
         // game title
-        const titleTexture = await Assets.load((await import('@/assets/bunny-0.png')).default);
+        const titleTexture = await Assets.load((await import('@/assets/gavin/gavin_idle00.png')).default);
         const titleSprite = new Sprite(titleTexture);
         titleSprite.anchor.set(0.5);
         titleSprite.position.set(this._app.renderer.width / 2, this._app.renderer.height / 2 - 200);
