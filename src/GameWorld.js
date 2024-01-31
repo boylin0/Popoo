@@ -58,21 +58,18 @@ class Floor {
 class Player {
     constructor(gameWorld, id, nickname, x, y) {
         const body = Matter.Bodies.rectangle(x, y, 80, 80, { inertia: Infinity });
+
         /** @type {GameWorld} */
         this._gameWorld = gameWorld;
+
         this.id = id;
         this.nickname = nickname;
         this.body = body;
-        this.graphics = null;
-
-        this._uiGraphics = null;
-        this._attackEffectGraphics = null;
 
         this._health = 100;
         this._isGrounded = false;
         this._lastAttacker = null;
         this._killCount = 0;
-
         this._lastAttackTimestamp = 0;
         this._lastJumpTimestamp = 0;
 
@@ -80,6 +77,9 @@ class Player {
             forward: false,
             backward: false,
         };
+
+        this.graphics = null;
+        this._uiGraphics = null;
 
         const engine = this._gameWorld.engine;
         Matter.Events.on(engine, 'collisionStart', (event) => {
