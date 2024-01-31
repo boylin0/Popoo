@@ -66,6 +66,7 @@ class Player {
         this.graphics = null;
 
         this._uiGraphics = null;
+        this._attackEffectGraphics = null;
 
         this._health = 100;
         this._isGrounded = false;
@@ -113,7 +114,7 @@ class Player {
         if (this._health < 0) {
             this._health = 0;
         }
-        if (this.graphics === null) return;
+        if (this._uiGraphics === null) return;
         const healthBar = this._uiGraphics.getChildByName('healthBar')
         healthBar.clear();
         healthBar.beginFill(0xff0000);
@@ -146,27 +147,27 @@ class Player {
 
         // load assets
         const bunnyTextureArray = await Utils.loadAssets([
-            import('@/assets/gavin/gavin_idle00.png'),
-            import('@/assets/gavin/gavin_idle01.png'),
-            import('@/assets/gavin/gavin_idle02.png'),
-            import('@/assets/gavin/gavin_idle03.png'),
-            import('@/assets/gavin/gavin_idle04.png'),
-            import('@/assets/gavin/gavin_idle05.png'),
-            import('@/assets/gavin/gavin_idle06.png'),
-            import('@/assets/gavin/gavin_idle07.png'),
-            import('@/assets/gavin/gavin_idle08.png'),
-            import('@/assets/gavin/gavin_idle09.png'),
-            import('@/assets/gavin/gavin_idle10.png'),
-            import('@/assets/gavin/gavin_idle11.png'),
-            import('@/assets/gavin/gavin_idle12.png'),
-            import('@/assets/gavin/gavin_idle13.png'),
-            import('@/assets/gavin/gavin_idle14.png'),
-            import('@/assets/gavin/gavin_idle15.png'),
-            import('@/assets/gavin/gavin_idle16.png'),
-            import('@/assets/gavin/gavin_idle17.png'),
-            import('@/assets/gavin/gavin_idle18.png'),
-            import('@/assets/gavin/gavin_idle19.png'),
-            import('@/assets/gavin/gavin_idle20.png'),
+            import('@/assets/nightshade/nightshade_idle00.png'),
+            import('@/assets/nightshade/nightshade_idle01.png'),
+            import('@/assets/nightshade/nightshade_idle02.png'),
+            import('@/assets/nightshade/nightshade_idle03.png'),
+            import('@/assets/nightshade/nightshade_idle04.png'),
+            import('@/assets/nightshade/nightshade_idle05.png'),
+            import('@/assets/nightshade/nightshade_idle06.png'),
+            import('@/assets/nightshade/nightshade_idle07.png'),
+            import('@/assets/nightshade/nightshade_idle08.png'),
+            import('@/assets/nightshade/nightshade_idle09.png'),
+            import('@/assets/nightshade/nightshade_idle10.png'),
+            import('@/assets/nightshade/nightshade_idle11.png'),
+            import('@/assets/nightshade/nightshade_idle12.png'),
+            import('@/assets/nightshade/nightshade_idle13.png'),
+            import('@/assets/nightshade/nightshade_idle14.png'),
+            import('@/assets/nightshade/nightshade_idle15.png'),
+            import('@/assets/nightshade/nightshade_idle16.png'),
+            import('@/assets/nightshade/nightshade_idle17.png'),
+            import('@/assets/nightshade/nightshade_idle18.png'),
+            import('@/assets/nightshade/nightshade_idle19.png'),
+            import('@/assets/nightshade/nightshade_idle20.png'),
         ]);
 
         const container = new PIXI.Container();
@@ -203,17 +204,41 @@ class Player {
         nicknameText.position.set(0, -80);
         uiContainer.addChild(nicknameText);
 
-        this._uiGraphics = uiContainer;
         this.graphics = container;
 
         // strike effect
-        const strikeEffect = new PIXI.Graphics();
+        const strikeEffectTexture = await Utils.loadAssets([
+            import('@/assets/attack/attack1_00.png'),
+            import('@/assets/attack/attack1_01.png'),
+            import('@/assets/attack/attack1_02.png'),
+            import('@/assets/attack/attack1_03.png'),
+            import('@/assets/attack/attack1_04.png'),
+            import('@/assets/attack/attack1_05.png'),
+            import('@/assets/attack/attack1_06.png'),
+            import('@/assets/attack/attack1_07.png'),
+            import('@/assets/attack/attack1_08.png'),
+            import('@/assets/attack/attack1_09.png'),
+            import('@/assets/attack/attack1_10.png'),
+            import('@/assets/attack/attack1_11.png'),
+            import('@/assets/attack/attack1_12.png'),
+            import('@/assets/attack/attack1_13.png'),
+            import('@/assets/attack/attack1_14.png'),
+            import('@/assets/attack/attack1_15.png'),
+            import('@/assets/attack/attack1_16.png'),
+        ]);
+        const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
         strikeEffect.name = 'strikeEffect';
-        strikeEffect.beginFill(0x009999);
-        strikeEffect.drawCircle(0, 0, 200);
-        strikeEffect.endFill();
-        strikeEffect.alpha = 0;
-        this._uiGraphics.addChild(strikeEffect);
+        strikeEffect.anchor.set(0.5);
+        strikeEffect.width = 200;
+        strikeEffect.height = 200;
+        strikeEffect.scale.set(1.5);
+        strikeEffect.visible = false;
+        strikeEffect.animationSpeed = 0.5;
+        strikeEffect.loop = false;
+        strikeEffect.onComplete = () => {
+            strikeEffect.visible = false;
+        };
+        uiContainer.addChild(strikeEffect);
 
         // kill count
         const killCountText = new PIXI.Text('Kill: 0', {
@@ -225,6 +250,8 @@ class Player {
         killCountText.anchor.set(0.5);
         killCountText.position.set(0, -120);
         uiContainer.addChild(killCountText);
+
+        this._uiGraphics = uiContainer;
 
         scene.addChild(container);
         scene.addChild(uiContainer);
@@ -295,15 +322,9 @@ class Player {
         this._lastAttackTimestamp = Date.now();
         if (this._uiGraphics === null) return;
         const strikeEffect = this._uiGraphics.getChildByName('strikeEffect');
-        strikeEffect.alpha = 1;
-        const tween = new PIXI.Ticker();
-        tween.add((delta) => {
-            strikeEffect.alpha -= 0.1 * delta;
-            if (strikeEffect.alpha <= 0) {
-                tween.stop();
-            }
-        });
-        tween.start();
+        strikeEffect.visible = true;
+        strikeEffect.gotoAndPlay(0);
+        
     }
 }
 

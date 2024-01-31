@@ -21,7 +21,7 @@ class ServerApp {
         });
         this.io.on('connection', this.handleConnection.bind(this));
 
-        setInterval(this.syncAllPlayers.bind(this), 1000);
+        setInterval(this.syncAllPlayers.bind(this), 500);
     }
 
     syncAllPlayers() {
