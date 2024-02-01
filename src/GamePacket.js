@@ -126,6 +126,13 @@ export default class GamePacket {
         return this;
     }
 
+    writeRawData(arrayBuffer) {
+        const uint8array = new Uint8Array(arrayBuffer);
+        this._data.push(...uint8array);
+        this._offset += uint8array.length;
+        return this;
+    }
+
     readInt8() {
         const value = this._data[this._offset];
         this._offset += 1;

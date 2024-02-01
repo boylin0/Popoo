@@ -5,193 +5,202 @@ import GameWorld from '../src/GameWorld.js';
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '../src/GamePacket.js';
 
 class ServerApp {
+
     constructor() {
         this.gameWorld = null;
-        this.sockets = [];
+        this.clients = [];
     }
 
     start() {
-        console.log('[%s] Server started', moment().format('YYYY-MM-DD HH:mm:ss'));
+
+        // Create a new game world
         this.gameWorld = new GameWorld();
         this.gameWorld.start(60);
+
+        // Create a new socket.io server
         this.io = new Server(8888, {
             cors: {
                 origin: '*',
             },
         });
-        this.io.on('connection', this.handleConnection.bind(this));
+        console.log('[%s] Server started', moment().format('YYYY-MM-DD HH:mm:ss'));
 
-        setInterval(this.syncAllPlayers.bind(this), 500);
-    }
-
-    syncAllPlayers() {
-        const players = this.gameWorld.getPlayers();
-        const packet = new GamePacket();
-        packet.writeInt16(PACKET_TYPE.SYNC_WORLD);
-        packet.writeInt32(players.length);
-        for (const player of players) {
-            packet.writeString(player.id);
-            packet.writeString(player.nickname);
-            packet.writeFloat32(player.body.position.x);
-            packet.writeFloat32(player.body.position.y);
-            packet.writeFloat32(player.body.angle);
-            packet.writeFloat32(player.body.angularVelocity);
-            packet.writeFloat32(player.body.angularSpeed);
-            packet.writeFloat32(player.body.velocity.x);
-            packet.writeFloat32(player.body.velocity.y);
-            packet.writeInt32(player.health);
-            packet.writeInt32(player.killCount);
+        //
+        // Listen for new connections
+        //
+        const handleNewConnection = (socket) => {
+            // Add the new client to the list
+            console.log('[%s] Connected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
+            this.addClient(socket);
+            // Remove the client from the list when disconnected
+            socket.on('disconnect', () => {
+                console.log('[%s] Disconnected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
+                this.removeClient(socket.id);
+                this.gameWorld.removePlayer(socket.id);
+            });
+            // Listen for packets
+            socket.on('packet', this.handlePacketEvent.bind(this, socket));
         }
-        this.broadcastWorldEvent('packet', packet.getData());
+        this.io.on('connection', handleNewConnection);
     }
 
-    handleConnection(socket) {
-
-        console.log('[%s] Connected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
-        this.sockets.push(socket);
-
-        socket.on('disconnect', () => {
-            console.log('[%s] Disconnected', moment().format('YYYY-MM-DD HH:mm:ss'), socket.id);
-            this.gameWorld.removePlayer(socket.id);
-            this.sockets = this.sockets.filter((s) => s.id !== socket.id);
+    addClient(socket) {
+        this.clients.push({
+            sessionId: socket.id,
+            socket: socket,
         });
+    }
 
-        socket.on('packet', (data) => {
-            const packet = new GamePacket(data);
-            const type = packet.readInt16();
-            switch (type) {
-                case PACKET_TYPE.JOIN_WORLD: {
-                    const nickname = packet.readString();
-                    this.gameWorld.addPlayer(socket.id, nickname.substring(0, 12));
-                    console.log(
-                        '[%s] Player \"%s\" joined the world',
-                        moment().format('YYYY-MM-DD HH:mm:ss'),
-                        nickname
+    removeClient(sessionId) {
+        this.clients = this.clients.filter((c) => c.sessionId !== sessionId);
+    }
+
+    getClient(sessionId) {
+        return this.clients.find((c) => c.sessionId === sessionId);
+    }
+
+    getClients() {
+        return this.clients;
+    }
+
+    handlePacketEvent(socket, data) {
+        const gameWorld = this.gameWorld;
+        const packet = new GamePacket(data);
+        const type = packet.readInt16();
+        switch (type) {
+            case PACKET_TYPE.JOIN_WORLD: {
+                const nickname = packet.readString();
+                gameWorld.addPlayer(socket.id, nickname.substring(0, 12));
+                setInterval(() => {
+                    socket.emit('packet', new GamePacket()
+                        .writeInt16(PACKET_TYPE.SYNC_WORLD)
+                        .writeRawData(gameWorld.getSyncPacket())
+                        .getData()
                     );
-                    break;
-                }
-                case PACKET_TYPE.WORLD_EVENT: {
-                    const event = packet.readInt16();
-                    switch (event) {
-                        case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).moveForward();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" move forward',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                        case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).moveForwardEnd();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD_END)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" move forward end',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                        case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).moveBackward();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" move backward',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                        case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).moveBackwardEnd();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD_END)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" move backward end',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                        case WORLD_EVENT.PLAYER_JUMP: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).jump();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_JUMP)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" jump',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                        case WORLD_EVENT.PLAYER_ATTACK: {
-                            const id = packet.readString();
-                            this.gameWorld.getPlayer(id).attack();
-                            this.broadcastWorldEvent(
-                                'packet',
-                                new GamePacket()
-                                    .writeInt16(PACKET_TYPE.WORLD_EVENT)
-                                    .writeInt16(WORLD_EVENT.PLAYER_ATTACK)
-                                    .writeString(id)
-                                    .getData()
-                            );
-                            console.log(
-                                '[%s] Player \"%s\" attack',
-                                moment().format('YYYY-MM-DD HH:mm:ss'),
-                                id
-                            );
-                            break;
-                        }
-                    }
-                    break;
-                }
+                }, 500);
+                console.log(
+                    '[%s] Player \"%s\"(%s) joined the world',
+                    moment().format('YYYY-MM-DD HH:mm:ss'),
+                    nickname,
+                    socket.id
+                );
+                break;
             }
-        });
+            case PACKET_TYPE.WORLD_EVENT: {
+                const event = packet.readInt16();
+                switch (event) {
+                    case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).moveForward();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" move forward',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                    case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).moveForwardEnd();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_MOVE_FORWARD_END)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" move forward end',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                    case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).moveBackward();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" move backward',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                    case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).moveBackwardEnd();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_MOVE_BACKWARD_END)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" move backward end',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                    case WORLD_EVENT.PLAYER_JUMP: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).jump();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_JUMP)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" jump',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                    case WORLD_EVENT.PLAYER_ATTACK: {
+                        const id = packet.readString();
+                        gameWorld.getPlayer(id).attack();
+                        this.broadcastPacket(
+                            new GamePacket()
+                                .writeInt16(PACKET_TYPE.WORLD_EVENT)
+                                .writeInt16(WORLD_EVENT.PLAYER_ATTACK)
+                                .writeString(id)
+                                .getData()
+                        );
+                        console.log(
+                            '[%s] Player \"%s\" attack',
+                            moment().format('YYYY-MM-DD HH:mm:ss'),
+                            id
+                        );
+                        break;
+                    }
+                }
+                break;
+            }
+        }
     }
 
-    broadcastWorldEvent(event, data) {
-        for (const socket of this.sockets) {
-            socket.emit(event, data);
-        }
+    broadcastPacket(packet) {
+        this.getClients().forEach((client) => {
+            client.socket.emit('packet', packet);
+        });
     }
 }
 

@@ -1,5 +1,6 @@
 import Matter from 'matter-js';
 import * as PIXI from 'pixi.js';
+import GamePacket, { PACKET_TYPE } from './GamePacket.js';
 
 const TIMESTEP = 1000 / 60;
 
@@ -233,7 +234,7 @@ class Player {
         strikeEffect.height = 200;
         strikeEffect.scale.set(1.5);
         strikeEffect.visible = false;
-        strikeEffect.animationSpeed = 0.5;
+        strikeEffect.animationSpeed = 0.9;
         strikeEffect.loop = false;
         strikeEffect.onComplete = () => {
             strikeEffect.visible = false;
@@ -319,12 +320,13 @@ class Player {
             otherPlayer.health -= 10;
             otherPlayer._lastAttacker = player;
         }
+        Matter.Body.applyForce(player.body, player.body.position, { x: 0.0, y: -0.2 });
         this._lastAttackTimestamp = Date.now();
         if (this._uiGraphics === null) return;
         const strikeEffect = this._uiGraphics.getChildByName('strikeEffect');
         strikeEffect.visible = true;
         strikeEffect.gotoAndPlay(0);
-        
+
     }
 }
 
@@ -452,5 +454,58 @@ export default class GameWorld {
         if (!player) return;
         Matter.World.remove(this._engine.world, player.body);
         this._objects = this._objects.filter(object => object !== player);
+    }
+
+    getSyncPacket() {
+        const players = this.getPlayers();
+        const packet = new GamePacket();
+        packet.writeInt32(players.length);
+        for (const player of players) {
+            packet.writeString(player.id);
+            packet.writeString(player.nickname);
+            packet.writeFloat32(player.body.position.x);
+            packet.writeFloat32(player.body.position.y);
+            packet.writeFloat32(player.body.angle);
+            packet.writeFloat32(player.body.angularVelocity);
+            packet.writeFloat32(player.body.angularSpeed);
+            packet.writeFloat32(player.body.velocity.x);
+            packet.writeFloat32(player.body.velocity.y);
+            packet.writeInt32(player.health);
+            packet.writeInt32(player.killCount);
+        }
+        return packet.getData();
+    }
+
+    /**
+     *
+     * @param {GamePacket} packet
+     * @returns {void}
+     * */
+    setSyncPacket(packet) {
+        const players = packet.readInt32();
+        for (let i = 0; i < players; i++) {
+            const id = packet.readString();
+            const nickname = packet.readString();
+            const x = packet.readFloat32();
+            const y = packet.readFloat32();
+            const angle = packet.readFloat32();
+            const angularVelocity = packet.readFloat32();
+            const angularSpeed = packet.readFloat32();
+            const velocityX = packet.readFloat32();
+            const velocityY = packet.readFloat32();
+            const health = packet.readInt32();
+            const killCount = packet.readInt32();
+            let player = this.getPlayer(id);
+            if (!player) {
+                player = this.addPlayer(id, nickname);
+            }
+            Matter.Body.setPosition(player.body, { x, y });
+            Matter.Body.setAngle(player.body, angle);
+            Matter.Body.setAngularVelocity(player.body, angularVelocity);
+            Matter.Body.setAngularSpeed(player.body, angularSpeed);
+            Matter.Body.setVelocity(player.body, { x: velocityX, y: velocityY });
+            player.health = health;
+            player.killCount = killCount;
+        }
     }
 }

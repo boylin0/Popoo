@@ -87,6 +87,8 @@ class WorldScene extends PIXI.Container {
                     break;
                 }
                 case PACKET_TYPE.SYNC_WORLD: {
+                    // TODO: Sync world with setSyncPacket
+                    //gameWorld.setSyncPacket(packet);
                     const clientPlayers = gameWorld.getPlayers();
                     const serverPlayers = [];
                     const serverPlayerCount = packet.readInt32();
