@@ -148,27 +148,27 @@ export class Player {
 
         // load assets
         const bunnyTextureArray = await Utils.loadAssets([
-            import('@/assets/nightshade/nightshade_idle00.png'),
-            import('@/assets/nightshade/nightshade_idle01.png'),
-            import('@/assets/nightshade/nightshade_idle02.png'),
-            import('@/assets/nightshade/nightshade_idle03.png'),
-            import('@/assets/nightshade/nightshade_idle04.png'),
-            import('@/assets/nightshade/nightshade_idle05.png'),
-            import('@/assets/nightshade/nightshade_idle06.png'),
-            import('@/assets/nightshade/nightshade_idle07.png'),
-            import('@/assets/nightshade/nightshade_idle08.png'),
-            import('@/assets/nightshade/nightshade_idle09.png'),
-            import('@/assets/nightshade/nightshade_idle10.png'),
-            import('@/assets/nightshade/nightshade_idle11.png'),
-            import('@/assets/nightshade/nightshade_idle12.png'),
-            import('@/assets/nightshade/nightshade_idle13.png'),
-            import('@/assets/nightshade/nightshade_idle14.png'),
-            import('@/assets/nightshade/nightshade_idle15.png'),
-            import('@/assets/nightshade/nightshade_idle16.png'),
-            import('@/assets/nightshade/nightshade_idle17.png'),
-            import('@/assets/nightshade/nightshade_idle18.png'),
-            import('@/assets/nightshade/nightshade_idle19.png'),
-            import('@/assets/nightshade/nightshade_idle20.png'),
+            import('@/assets/gavin/gavin_idle00.png'),
+            import('@/assets/gavin/gavin_idle01.png'),
+            import('@/assets/gavin/gavin_idle02.png'),
+            import('@/assets/gavin/gavin_idle03.png'),
+            import('@/assets/gavin/gavin_idle04.png'),
+            import('@/assets/gavin/gavin_idle05.png'),
+            import('@/assets/gavin/gavin_idle06.png'),
+            import('@/assets/gavin/gavin_idle07.png'),
+            import('@/assets/gavin/gavin_idle08.png'),
+            import('@/assets/gavin/gavin_idle09.png'),
+            import('@/assets/gavin/gavin_idle10.png'),
+            import('@/assets/gavin/gavin_idle11.png'),
+            import('@/assets/gavin/gavin_idle12.png'),
+            import('@/assets/gavin/gavin_idle13.png'),
+            import('@/assets/gavin/gavin_idle14.png'),
+            import('@/assets/gavin/gavin_idle15.png'),
+            import('@/assets/gavin/gavin_idle16.png'),
+            import('@/assets/gavin/gavin_idle17.png'),
+            import('@/assets/gavin/gavin_idle18.png'),
+            import('@/assets/gavin/gavin_idle19.png'),
+            import('@/assets/gavin/gavin_idle20.png'),
         ]);
 
         const container = new PIXI.Container();
@@ -303,7 +303,7 @@ export class Player {
     }
 
     attack() {
-        if (Date.now() - this._lastAttackTimestamp < 1000) return;
+        if (Date.now() - this._lastAttackTimestamp < 200) return;
         const gameWorld = this._gameWorld;
         const player = this;
         for (const otherPlayer of gameWorld.getPlayers()) {
@@ -376,10 +376,10 @@ export default class GameWorld {
 
     start(tickRate = 20) {
         // build terrain
-        this.addFloor(0, 600, 3000, 300);
+        this.addFloor(0, 600, 5000, 300);
 
         for (let i = 0; i < 10; i++) {
-            this.addFloor(-200 + i * 120, 250, 50, 50);
+            this.addFloor(-800 + i * 250, 250, 50, 50);
         }
 
         this.setTickRateAndStartTick(tickRate);
@@ -407,7 +407,7 @@ export default class GameWorld {
                     Matter.Body.setVelocity(player.body, { x: -10, y: player.body.velocity.y });
                 }
 
-                if (player.body.position.y > 1000 || player.health <= 0) {
+                if (player.body.position.y > 1000 || player.body.position.y < -3000 || player.health <= 0) {
                     Matter.Body.setPosition(player.body, { x: 100, y: 100 });
                     Matter.Body.setVelocity(player.body, { x: 0, y: 0 });
                     Matter.Body.setAngle(player.body, 0);

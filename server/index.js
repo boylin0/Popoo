@@ -77,7 +77,7 @@ class ServerApp {
                         .writeRawData(gameWorld.getSyncPacket())
                         .getData()
                     );
-                }, 500);
+                }, 300);
                 console.log(
                     '[%s] Player \"%s\"(%s) joined the world',
                     moment().format('YYYY-MM-DD HH:mm:ss'),
