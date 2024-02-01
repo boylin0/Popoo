@@ -4,7 +4,7 @@ import * as PIXI from 'pixi.js';
 import { Application, Assets, Sprite } from 'pixi.js';
 
 import Matter from 'matter-js';
-import GameWorld, { Floor, Player, Utils } from '@/GameWorld';
+import GameWorld, { Floor, Character, Utils } from '@/GameWorld';
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/GamePacket';
 
 class WorldScene extends PIXI.Container {
@@ -13,7 +13,6 @@ class WorldScene extends PIXI.Container {
         super();
         /** @type {import('@/app/App').GameApplication} */
         this._app = app;
-        this._renderObjects = [];
         this._myBunny = null;
         this._camera = { x: 0, y: 0 };
         this._isInitWorld = false;
@@ -38,6 +37,7 @@ class WorldScene extends PIXI.Container {
 
         const gameWorld = new GameWorld();
         gameWorld.start(170);
+        await gameWorld.initGraphics(this);
 
         socketio.on('packet', async (data) => {
             const packet = new GamePacket(data);
@@ -96,7 +96,6 @@ class WorldScene extends PIXI.Container {
         for (const entity of entities) {
             if (entity instanceof Floor) {
                 await entity.initGraphics(this);
-                this._renderObjects.push(entity);
                 continue;
             }
         }
@@ -139,10 +138,7 @@ class WorldScene extends PIXI.Container {
     update(dt) {
         if (!this._isInitWorld) return;
 
-        const renderObjects = this._renderObjects
-        for (const object of renderObjects) {
-            object.renderGraphics();
-        }
+        this.gameWorld.renderGraphics();
 
         this.targetCameraToSprite(this.gameWorld.getPlayer(this._app.socketio.id)?.graphics);
 

@@ -18,57 +18,173 @@ export const Utils = {
     }
 }
 
-export class Floor {
-    constructor(gameWorld, x, y, width, height) {
-        const body = Matter.Bodies.rectangle(x, y, width, height, { isStatic: true });
+export class GameEntity {
+    constructor(gameWorld) {
         /** @type {GameWorld} */
         this._gameWorld = gameWorld;
-        this.body = body;
         this.graphics = null;
+        this.body = null;
+        this.scene = null;
+        this.id = Math.random().toString(36);
     }
 
     async initGraphics(scene) {
+        //throw new Error('Not implemented');
+    }
+
+    disposeGraphics(scene) {
+        //throw new Error('Not implemented');
+    }
+
+    renderGraphics() {
+        //throw new Error('Not implemented');
+    }
+
+    _initPhysics() {
+        //throw new Error('Not implemented');
+    }
+
+    disposePhysics() {
+        //throw new Error('Not implemented');
+    }
+
+    renderPhysics() {
+        //throw new Error('Not implemented');
+    }
+
+    setScene(scene) {
+        this.scene = scene;
+    }
+}
+
+export class WorldItem extends GameEntity {
+    constructor(gameWorld, id, x, y) {
+        super(gameWorld);
+        this.id = id;
+        this.x = x;
+        this.y = y;
+        this._initPhysics();
+    }
+
+    async initGraphics(scene) {
+        this.graphics = new PIXI.Container();
 
         const [
-            floorTexture,
+            worldItemTexture,
         ] = await Utils.loadAssets([
-            import('@/assets/floor.jpg')
+            import('@/assets/world_item.png'),
         ]);
-
-        const container = new PIXI.Container();
-
-        const sprite = new PIXI.TilingSprite(floorTexture);
+        const sprite = new PIXI.Sprite(worldItemTexture);
         sprite.anchor.set(0.5);
-        sprite.width = this.body.bounds.max.x - this.body.bounds.min.x;
-        sprite.height = this.body.bounds.max.y - this.body.bounds.min.y;
-        container.addChild(sprite);
-
-        this.graphics = container;
-
-        scene.addChild(container);
-        return container;
+        sprite.width = 50;
+        sprite.height = 50;
+        this.graphics.addChild(sprite);
+        scene.addChild(this.graphics);
+        this.setScene(scene);
+        return this.graphics;
     }
 
     renderGraphics() {
         this.graphics.position.set(this.body.position.x, this.body.position.y);
-        this.graphics.rotation = this.body.angle;
+    }
+
+    _initPhysics() {
+        const body = Matter.Bodies.rectangle(this.x, this.y, 50, 50);
+        // bounce
+        body.restitution = 0.5;
+        // friction
+        body.friction = 0.5;
+        // density
+        body.density = 0.01;
+        this.body = body;
+        Matter.World.add(this._gameWorld.world, body);
+        return body;
+    }
+
+    renderPhysics() {
+        return;
+    }
+
+
+    disposeGraphics() {
+        this.scene.removeChild(this.graphics);
+    }
+
+    disposePhysics() {
+        Matter.World.remove(this._gameWorld.world, this.body);
+    }
+}
+
+export class Floor extends GameEntity {
+    constructor(gameWorld, x, y, width, height) {
+        super(gameWorld);
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this._initPhysics();
+    }
+
+    async initGraphics(scene) {
+        const container = new PIXI.Container();
+
+        const [
+            floorTexture,
+        ] = await Utils.loadAssets([
+            import('@/assets/floor.jpg'),
+        ]);
+        const sprite = new PIXI.TilingSprite(floorTexture, this.width, this.height);
+        sprite.name = 'floorSprite';
+        sprite.anchor.set(0.5);
+        sprite.width = this.body.bounds.max.x - this.body.bounds.min.x;
+        sprite.height = this.body.bounds.max.y - this.body.bounds.min.y;
+        sprite.x = this.body.position.x;
+        sprite.y = this.body.position.y;
+        container.addChild(sprite);
+
+        this.graphics = container;
+        scene.addChild(this.graphics);
+        this.setScene(scene);
+        return this.graphics;
+    }
+
+    renderGraphics() {
+        const floorSprite = this.graphics.getChildByName('floorSprite');
+        floorSprite.position.set(this.body.position.x, this.body.position.y);
+        floorSprite.rotation = this.body.angle;
+    }
+
+    _initPhysics() {
+        const body = Matter.Bodies.rectangle(this.x, this.y, this.width, this.height, { isStatic: true });
+        this.body = body;
+        Matter.World.add(this._gameWorld.world, body);
+        return body;
+    }
+
+    renderPhysics() {
+        return;
+    }
+
+    disposeGraphics(scene) {
+        this.scene.removeChild(this.graphics);
+    }
+
+    disposePhysics() {
+        Matter.World.remove(this._gameWorld.world, this.body);
     }
 }
 
 
-export class Player {
+export class Character extends GameEntity {
     constructor(gameWorld, id, nickname, characterType, x, y) {
-
+        super(gameWorld);
         this.characterType = characterType;
-
-        const body = Matter.Bodies.rectangle(x, y, 80, 80, { inertia: Infinity });
-
-        /** @type {GameWorld} */
-        this._gameWorld = gameWorld;
 
         this.id = id;
         this.nickname = nickname;
-        this.body = body;
+
+        this.x = x;
+        this.y = y;
 
         this._health = 100;
         this._isGrounded = false;
@@ -81,76 +197,14 @@ export class Player {
             forward: false,
             backward: false,
         };
-
-        this.graphics = null;
-        this._uiGraphics = null;
-
-        const engine = this._gameWorld.engine;
-        Matter.Events.on(engine, 'collisionStart', (event) => {
-            for (const pair of event.pairs) {
-                if (pair.bodyA === this.body || pair.bodyB === this.body) {
-                    this._isGrounded = true;
-                }
-            }
-        });
-        Matter.Events.on(engine, 'collisionEnd', (event) => {
-            for (const pair of event.pairs) {
-                if (pair.bodyA === this.body || pair.bodyB === this.body) {
-                    this._isGrounded = false;
-                }
-            }
-        });
-        Matter.Events.on(engine, 'collisionActive', (event) => {
-            for (const pair of event.pairs) {
-                if (pair.bodyA === this.body || pair.bodyB === this.body) {
-                    this._isGrounded = true;
-                }
-            }
-        });
-    }
-
-    get health() {
-        return this._health;
-    }
-
-    set health(value) {
-        this._health = value;
-        if (this._health < 0) {
-            this._health = 0;
-        }
-        if (this._uiGraphics === null) return;
-        const healthBar = this._uiGraphics.getChildByName('healthBar')
-        healthBar.clear();
-        healthBar.beginFill(0xff0000);
-        healthBar.drawRect(0, 0, 100, 10);
-        healthBar.endFill();
-        healthBar.beginFill(0x00ff00);
-        healthBar.drawRect(0, 0, this._health, 10);
-        healthBar.endFill();
-    }
-
-    get killCount() {
-        return this._killCount;
-    }
-
-    set killCount(value) {
-        this._killCount = value;
-        if (this._uiGraphics === null) return;
-        const killCountText = this._uiGraphics.getChildByName('killCountText');
-        killCountText.text = `Kill: ${this._killCount}`;
-    }
-
-    newKill() {
-        this._killCount++;
-        if (this._uiGraphics === null) return;
-        const killCountText = this._uiGraphics.getChildByName('killCountText');
-        killCountText.text = `Kill: ${this._killCount}`;
+        this._initPhysics();
     }
 
     async initGraphics(scene) {
+        const container = new PIXI.Container();
 
-        // load assets
-        const bunnyTextureArray = await Utils.loadAssets([
+        // Character Sprite
+        const characterTextureArray = await Utils.loadAssets([
             import('@/assets/gavin/gavin_idle00.png'),
             import('@/assets/gavin/gavin_idle01.png'),
             import('@/assets/gavin/gavin_idle02.png'),
@@ -173,19 +227,14 @@ export class Player {
             import('@/assets/gavin/gavin_idle19.png'),
             import('@/assets/gavin/gavin_idle20.png'),
         ]);
-
-        const container = new PIXI.Container();
-
-        // Bunny
-        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
-        bunny.anchor.set(0.5, 0.7);
-        bunny.animationSpeed = 0.1;
-        bunny.play();
-        bunny.width = 125;
-        bunny.height = 125;
-        container.addChild(bunny);
-
-        const uiContainer = new PIXI.Container();
+        const characterSprite = new PIXI.AnimatedSprite(characterTextureArray);
+        characterSprite.name = 'characterSprite';
+        characterSprite.anchor.set(0.5, 0.8);
+        characterSprite.animationSpeed = 0.1;
+        characterSprite.play();
+        characterSprite.width = 125;
+        characterSprite.height = 125;
+        container.addChild(characterSprite);
 
         // Health bar
         const healthBar = new PIXI.Graphics();
@@ -196,19 +245,18 @@ export class Player {
         healthBar.beginFill(0x00ff00);
         healthBar.drawRect(0, 0, this._health, 10);
         healthBar.endFill();
-        healthBar.position.set(-50, -60);
-        uiContainer.addChild(healthBar);
+        healthBar.position.set(-50, -80);
+        container.addChild(healthBar);
 
         // Nickname
         const nicknameText = new PIXI.Text(this.nickname, {
             fill: 0xffffff,
             align: 'center',
         });
+        nicknameText.name = 'nicknameText';
         nicknameText.anchor.set(0.5);
-        nicknameText.position.set(0, -80);
-        uiContainer.addChild(nicknameText);
-
-        this.graphics = container;
+        nicknameText.position.set(0, -100);
+        container.addChild(nicknameText);
 
         // strike effect
         const strikeEffectTexture = await Utils.loadAssets([
@@ -232,7 +280,7 @@ export class Player {
         ]);
         const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
         strikeEffect.name = 'strikeEffect';
-        strikeEffect.anchor.set(0.5);
+        strikeEffect.anchor.set(0.5, 0.6);
         strikeEffect.width = 200;
         strikeEffect.height = 200;
         strikeEffect.scale.set(1.5);
@@ -242,7 +290,7 @@ export class Player {
         strikeEffect.onComplete = () => {
             strikeEffect.visible = false;
         };
-        uiContainer.addChild(strikeEffect);
+        container.addChild(strikeEffect);
 
         // kill count
         const killCountText = new PIXI.Text('Kill: 0', {
@@ -253,30 +301,101 @@ export class Player {
         killCountText.name = 'killCountText';
         killCountText.anchor.set(0.5);
         killCountText.position.set(0, -120);
-        uiContainer.addChild(killCountText);
+        container.addChild(killCountText);
 
-        this._uiGraphics = uiContainer;
-
+        this.graphics = container;
         scene.addChild(container);
-        scene.addChild(uiContainer);
+        this.setScene(scene);
         return container;
     }
 
-    disposeGraphics(scene) {
-        scene.removeChild(this.graphics);
-        scene.removeChild(this._uiGraphics);
+    _initPhysics() {
+        const body = Matter.Bodies.rectangle(this.x, this.y, 50, 50, { inertia: Infinity });
+        Matter.World.add(this._gameWorld.world, body);
+        Matter.Events.on(this._gameWorld._engine, 'collisionStart', (event) => {
+            for (const pair of event.pairs) {
+                if (pair.bodyA === this.body || pair.bodyB === this.body) {
+                    this._isGrounded = true;
+                }
+            }
+        });
+        Matter.Events.on(this._gameWorld._engine, 'collisionEnd', (event) => {
+            for (const pair of event.pairs) {
+                if (pair.bodyA === this.body || pair.bodyB === this.body) {
+                    this._isGrounded = false;
+                }
+            }
+        });
+        Matter.Events.on(this._gameWorld._engine, 'collisionActive', (event) => {
+            for (const pair of event.pairs) {
+                if (pair.bodyA === this.body || pair.bodyB === this.body) {
+                    this._isGrounded = true;
+                }
+            }
+        });
+        this.body = body;
+    }
+
+    renderPhysics() {
+        return;
     }
 
     renderGraphics() {
-        if (this._input.backward && this.graphics.scale.x > 0) {
-            this.graphics.scale.x = -this.graphics.scale.x;
+        const characterSprite = this.graphics.getChildByName('characterSprite');
+        if (this._input.backward && characterSprite.scale.x > 0) {
+            characterSprite.scale.x = -characterSprite.scale.x;
         }
-        if (this._input.forward && this.graphics.scale.x < 0) {
-            this.graphics.scale.x = -this.graphics.scale.x;
+        if (this._input.forward && characterSprite.scale.x < 0) {
+            characterSprite.scale.x = -characterSprite.scale.x;
         }
+        characterSprite.rotation = this.body.angle;
         this.graphics.position.set(this.body.position.x, this.body.position.y);
-        this.graphics.rotation = this.body.angle;
-        this._uiGraphics.position.set(this.body.position.x, this.body.position.y - 20);
+    }
+
+    disposeGraphics() {
+        this.scene.removeChild(this.graphics);
+    }
+
+    disposePhysics() {
+        Matter.World.remove(this._gameWorld.world, this.body);
+    }
+
+    get health() {
+        return this._health;
+    }
+
+    set health(value) {
+        this._health = value;
+        if (this._health < 0) {
+            this._health = 0;
+        }
+        if (this.graphics === null) return;
+        const healthBar = this.graphics.getChildByName('healthBar')
+        healthBar.clear();
+        healthBar.beginFill(0xff0000);
+        healthBar.drawRect(0, 0, 100, 10);
+        healthBar.endFill();
+        healthBar.beginFill(0x00ff00);
+        healthBar.drawRect(0, 0, this._health, 10);
+        healthBar.endFill();
+    }
+
+    get killCount() {
+        return this._killCount;
+    }
+
+    set killCount(value) {
+        this._killCount = value;
+        if (this.graphics === null) return;
+        const killCountText = this.graphics.getChildByName('killCountText');
+        killCountText.text = `Kill: ${this._killCount}`;
+    }
+
+    newKill() {
+        this._killCount++;
+        if (this.graphics === null) return;
+        const killCountText = this.graphics.getChildByName('killCountText');
+        killCountText.text = `Kill: ${this._killCount}`;
     }
 
     moveForward() {
@@ -300,16 +419,16 @@ export class Player {
     jump() {
         if (Date.now() - this._lastJumpTimestamp < 100) return;
         if (this._isGrounded) {
-            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.3 });
+            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.08 });
             this._lastJumpTimestamp = Date.now();
         }
     }
 
     attack() {
-        if (Date.now() - this._lastAttackTimestamp < 200) return;
+        if (Date.now() - this._lastAttackTimestamp < 1000) return;
         const gameWorld = this._gameWorld;
         const player = this;
-        for (const otherPlayer of gameWorld.getPlayers()) {
+        for (const otherPlayer of gameWorld.getEntities(Character)) {
             if (otherPlayer === player) continue;
             const dx = otherPlayer.body.position.x - player.body.position.x;
             const dy = otherPlayer.body.position.y - player.body.position.y;
@@ -323,26 +442,27 @@ export class Player {
             otherPlayer.health -= 10;
             otherPlayer._lastAttacker = player;
         }
-        Matter.Body.applyForce(player.body, player.body.position, { x: 0.0, y: -0.2 });
+        Matter.Body.applyForce(player.body, player.body.position, { x: 0.0, y: -0.05 });
         this._lastAttackTimestamp = Date.now();
-        if (this._uiGraphics === null) return;
-        const strikeEffect = this._uiGraphics.getChildByName('strikeEffect');
+        if (this.graphics === null) return;
+        const strikeEffect = this.graphics.getChildByName('strikeEffect');
         strikeEffect.visible = true;
         strikeEffect.gotoAndPlay(0);
 
     }
 }
 
-export class Gavin extends Player {
+export class GavinCharacter extends Character {
     constructor(gameWorld, id, nickname, x, y) {
         super(gameWorld, id, nickname, CHARACTERS_TYPE.GAVIN, x, y);
-        this.characterType = CHARACTERS_TYPE.GAVIN;
     }
 
     async initGraphics(scene) {
 
-        // load assets
-        const bunnyTextureArray = await Utils.loadAssets([
+        const container = new PIXI.Container();
+
+        // Character Sprite
+        const characterTextureArray = await Utils.loadAssets([
             import('@/assets/gavin/gavin_idle00.png'),
             import('@/assets/gavin/gavin_idle01.png'),
             import('@/assets/gavin/gavin_idle02.png'),
@@ -365,19 +485,14 @@ export class Gavin extends Player {
             import('@/assets/gavin/gavin_idle19.png'),
             import('@/assets/gavin/gavin_idle20.png'),
         ]);
-
-        const container = new PIXI.Container();
-
-        // Bunny
-        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
-        bunny.anchor.set(0.5, 0.7);
-        bunny.animationSpeed = 0.1;
-        bunny.play();
-        bunny.width = 125;
-        bunny.height = 125;
-        container.addChild(bunny);
-
-        const uiContainer = new PIXI.Container();
+        const characterSprite = new PIXI.AnimatedSprite(characterTextureArray);
+        characterSprite.name = 'characterSprite';
+        characterSprite.anchor.set(0.5, 0.8);
+        characterSprite.animationSpeed = 0.1;
+        characterSprite.play();
+        characterSprite.width = 125;
+        characterSprite.height = 125;
+        container.addChild(characterSprite);
 
         // Health bar
         const healthBar = new PIXI.Graphics();
@@ -388,19 +503,18 @@ export class Gavin extends Player {
         healthBar.beginFill(0x00ff00);
         healthBar.drawRect(0, 0, this._health, 10);
         healthBar.endFill();
-        healthBar.position.set(-50, -60);
-        uiContainer.addChild(healthBar);
+        healthBar.position.set(-50, -80);
+        container.addChild(healthBar);
 
         // Nickname
         const nicknameText = new PIXI.Text(this.nickname, {
             fill: 0xffffff,
             align: 'center',
         });
+        nicknameText.name = 'nicknameText';
         nicknameText.anchor.set(0.5);
-        nicknameText.position.set(0, -80);
-        uiContainer.addChild(nicknameText);
-
-        this.graphics = container;
+        nicknameText.position.set(0, -100);
+        container.addChild(nicknameText);
 
         // strike effect
         const strikeEffectTexture = await Utils.loadAssets([
@@ -424,7 +538,7 @@ export class Gavin extends Player {
         ]);
         const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
         strikeEffect.name = 'strikeEffect';
-        strikeEffect.anchor.set(0.5);
+        strikeEffect.anchor.set(0.5, 0.6);
         strikeEffect.width = 200;
         strikeEffect.height = 200;
         strikeEffect.scale.set(1.5);
@@ -434,7 +548,7 @@ export class Gavin extends Player {
         strikeEffect.onComplete = () => {
             strikeEffect.visible = false;
         };
-        uiContainer.addChild(strikeEffect);
+        container.addChild(strikeEffect);
 
         // kill count
         const killCountText = new PIXI.Text('Kill: 0', {
@@ -445,26 +559,26 @@ export class Gavin extends Player {
         killCountText.name = 'killCountText';
         killCountText.anchor.set(0.5);
         killCountText.position.set(0, -120);
-        uiContainer.addChild(killCountText);
+        container.addChild(killCountText);
 
-        this._uiGraphics = uiContainer;
-
+        this.graphics = container;
         scene.addChild(container);
-        scene.addChild(uiContainer);
+        this.setScene(scene);
         return container;
     }
 }
 
-export class NightShade extends Player {
+export class NightShadeCharacter extends Character {
     constructor(gameWorld, id, nickname, x, y) {
         super(gameWorld, id, nickname, CHARACTERS_TYPE.NIGHTSHADE, x, y);
-        this.characterType = CHARACTERS_TYPE.NIGHTSHADE;
     }
 
     async initGraphics(scene) {
 
-        // load assets
-        const bunnyTextureArray = await Utils.loadAssets([
+        const container = new PIXI.Container();
+
+        // Character Sprite
+        const characterTextureArray = await Utils.loadAssets([
             import('@/assets/nightshade/nightshade_idle00.png'),
             import('@/assets/nightshade/nightshade_idle01.png'),
             import('@/assets/nightshade/nightshade_idle02.png'),
@@ -487,19 +601,14 @@ export class NightShade extends Player {
             import('@/assets/nightshade/nightshade_idle19.png'),
             import('@/assets/nightshade/nightshade_idle20.png'),
         ]);
-
-        const container = new PIXI.Container();
-
-        // Bunny
-        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
-        bunny.anchor.set(0.5, 0.7);
-        bunny.animationSpeed = 0.1;
-        bunny.play();
-        bunny.width = 125;
-        bunny.height = 125;
-        container.addChild(bunny);
-
-        const uiContainer = new PIXI.Container();
+        const characterSprite = new PIXI.AnimatedSprite(characterTextureArray);
+        characterSprite.name = 'characterSprite';
+        characterSprite.anchor.set(0.5, 0.8);
+        characterSprite.animationSpeed = 0.1;
+        characterSprite.play();
+        characterSprite.width = 125;
+        characterSprite.height = 125;
+        container.addChild(characterSprite);
 
         // Health bar
         const healthBar = new PIXI.Graphics();
@@ -510,19 +619,18 @@ export class NightShade extends Player {
         healthBar.beginFill(0x00ff00);
         healthBar.drawRect(0, 0, this._health, 10);
         healthBar.endFill();
-        healthBar.position.set(-50, -60);
-        uiContainer.addChild(healthBar);
+        healthBar.position.set(-50, -80);
+        container.addChild(healthBar);
 
         // Nickname
         const nicknameText = new PIXI.Text(this.nickname, {
             fill: 0xffffff,
             align: 'center',
         });
+        nicknameText.name = 'nicknameText';
         nicknameText.anchor.set(0.5);
-        nicknameText.position.set(0, -80);
-        uiContainer.addChild(nicknameText);
-
-        this.graphics = container;
+        nicknameText.position.set(0, -100);
+        container.addChild(nicknameText);
 
         // strike effect
         const strikeEffectTexture = await Utils.loadAssets([
@@ -546,7 +654,7 @@ export class NightShade extends Player {
         ]);
         const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
         strikeEffect.name = 'strikeEffect';
-        strikeEffect.anchor.set(0.5);
+        strikeEffect.anchor.set(0.5, 0.6);
         strikeEffect.width = 200;
         strikeEffect.height = 200;
         strikeEffect.scale.set(1.5);
@@ -556,7 +664,7 @@ export class NightShade extends Player {
         strikeEffect.onComplete = () => {
             strikeEffect.visible = false;
         };
-        uiContainer.addChild(strikeEffect);
+        container.addChild(strikeEffect);
 
         // kill count
         const killCountText = new PIXI.Text('Kill: 0', {
@@ -567,15 +675,15 @@ export class NightShade extends Player {
         killCountText.name = 'killCountText';
         killCountText.anchor.set(0.5);
         killCountText.position.set(0, -120);
-        uiContainer.addChild(killCountText);
+        container.addChild(killCountText);
 
-        this._uiGraphics = uiContainer;
-
+        this.graphics = container;
         scene.addChild(container);
-        scene.addChild(uiContainer);
+        this.setScene(scene);
         return container;
     }
 }
+
 
 export default class GameWorld {
 
@@ -585,6 +693,7 @@ export default class GameWorld {
         this._tickInterval = null;
         this._tickRate = 60;
         this.nextTimestep = null;
+        this._isInitGraphics = false;
     }
 
     get engine() {
@@ -597,36 +706,42 @@ export default class GameWorld {
 
     /**
      * 
-     * @returns {Floor[]}
+     * @returns {Character[]}
      */
-    getFloors() {
-        return this.getEntities(Floor);
+    getPlayers() {
+        return this.getEntities(Character);
+    }
+
+    /** @returns {Character} */
+    getPlayer(id) {
+        return this.getEntities(Character).find(player => player.id === id);
+    }
+
+    getEntity(id) {
+        return this._entities.find(entity => entity.id === id);
     }
 
     /**
      * 
-     * @returns {Player[]}
-     */
-    getPlayers() {
-        return this.getEntities(Player);
-    }
-
-    /** @returns {Player} */
-    getPlayer(id) {
-        return this.getEntities(Player).find(player => player.id === id);
-    }
-
+     * @param {T} entityType
+     * @returns {T[]}
+     * */
     getEntities(entityType = null) {
         if (!entityType) return this._entities;
         return this._entities.filter(object => object instanceof entityType) || [];
     }
 
     start(tickRate = 20) {
-        // build terrain
-        this.addFloor(0, 600, 5000, 300);
 
+        // build terrain
+        this.addEntity(new Floor(this, 0, 600, 5000, 300));
         for (let i = 0; i < 10; i++) {
-            this.addFloor(-800 + i * 250, 250, 50, 50);
+            this.addEntity(new Floor(this, -800 + i * 250, 250, 50, 50));
+        }
+
+        // Add world item
+        for (let i = 0; i < 10; i++) {
+            this.addEntity(new WorldItem(this, 'item' + i, -500 + i * 100, 500));
         }
 
         this.setTickRateAndStartTick(tickRate);
@@ -680,6 +795,24 @@ export default class GameWorld {
         }
     }
 
+    async initGraphics(scene) {
+        for (const entity of this._entities) {
+            await entity.initGraphics(scene);
+        }
+        this._isInitGraphics = true;
+    }
+
+    renderGraphics() {
+        if (this._isInitGraphics === false) return;
+        for (const entity of this._entities) {
+            try {
+                entity.renderGraphics();
+            } catch (e) {
+                //console.error(e);
+            }
+        }
+    }
+
     addEntity(entity) {
         this._entities.push(entity);
         return entity;
@@ -690,26 +823,18 @@ export default class GameWorld {
         this._entities = this._entities.filter(object => object !== entity);
     }
 
-    addFloor(x, y, width, height) {
-        const floor = new Floor(this, x, y, width, height);
-        Matter.World.add(this.world, floor.body);
-        this.addEntity(floor);
-        return floor;
-    }
-
     addPlayer(id, nickname, characterType) {
         let character = null;
         if (characterType === CHARACTERS_TYPE.GAVIN) {
-            character = new Player(this, id, nickname, 1, 100, 100);
+            character = new GavinCharacter(this, id, nickname, characterType, 100, 100);
         }
         if (characterType === CHARACTERS_TYPE.NIGHTSHADE) {
-            character = new NightShade(this, id, nickname, 100, 100);
+            character = new NightShadeCharacter(this, id, nickname, characterType, 100, 100);
         }
         if (!character) {
             console.error('Unknown character type: %s', characterType);
             return;
         }
-        Matter.World.add(this._engine.world, character.body);
         this.addEntity(character);
         return character;
     }
@@ -722,8 +847,9 @@ export default class GameWorld {
     }
 
     getSyncPacket() {
-        const players = this.getPlayers();
         const packet = new GamePacket();
+
+        const players = this.getPlayers();
         packet.writeInt32(players.length);
         for (const player of players) {
             packet.writeString(player.id)
@@ -739,6 +865,19 @@ export default class GameWorld {
                 .writeInt32(player.health)
                 .writeInt32(player.killCount)
         }
+
+        const worldItems = this.getEntities(WorldItem);
+        packet.writeInt32(worldItems.length);
+        for (const worldItem of worldItems) {
+            packet.writeString(worldItem.id)
+                .writeFloat32(worldItem.body.position.x)
+                .writeFloat32(worldItem.body.position.y)
+                .writeFloat32(worldItem.body.angle)
+                .writeFloat32(worldItem.body.angularVelocity)
+                .writeFloat32(worldItem.body.angularSpeed)
+                .writeFloat32(worldItem.body.velocity.x)
+                .writeFloat32(worldItem.body.velocity.y)
+        }
         return packet.getData();
     }
 
@@ -750,7 +889,7 @@ export default class GameWorld {
     async setSyncPacket(scene, packet) {
         const serverPlayerCount = packet.readInt32();
         const serverPlayers = [];
-        // remove players
+        // Read server players
         for (let i = 0; i < serverPlayerCount; i++) {
             serverPlayers.push({
                 id: packet.readString(),
@@ -767,19 +906,47 @@ export default class GameWorld {
                 killCount: packet.readInt32(),
             });
         }
+        // Read server world items
+        const serverWorldItemCount = packet.readInt32();
+        const serverWorldItems = [];
+        for (let i = 0; i < serverWorldItemCount; i++) {
+            serverWorldItems.push({
+                id: packet.readString(),
+                x: packet.readFloat32(),
+                y: packet.readFloat32(),
+                angle: packet.readFloat32(),
+                angularVelocity: packet.readFloat32(),
+                angularSpeed: packet.readFloat32(),
+                velocityX: packet.readFloat32(),
+                velocityY: packet.readFloat32(),
+            });
+        }
+        // Update world items
+        for (const worldItem of this.getEntities(WorldItem)) {
+            const serverWorldItem = serverWorldItems.find(wi => wi.id === worldItem.id);
+            if (!serverWorldItem) continue;
+            Matter.Body.setPosition(worldItem.body, { x: serverWorldItem.x, y: serverWorldItem.y });
+            Matter.Body.setAngle(worldItem.body, serverWorldItem.angle);
+            Matter.Body.setAngularVelocity(worldItem.body, serverWorldItem.angularVelocity);
+            Matter.Body.setAngularSpeed(worldItem.body, serverWorldItem.angularSpeed);
+            Matter.Body.setVelocity(worldItem.body, { x: serverWorldItem.velocityX, y: serverWorldItem.velocityY });
+        }
+
         // Remove old players
         for (const player of this.getPlayers()) {
             if (serverPlayers.find(p => p.id === player.id)) continue;
-            player.disposeGraphics(scene);
-            this.removePlayer(player.id);
-            scene._renderObjects = scene._renderObjects.filter(o => o.id !== player.id);
+            this.removeEntity(player);
         }
         // Add new players
         for (const player of serverPlayers) {
             if (this.getPlayer(player.id)) continue;
             const newPlayer = this.addPlayer(player.id, player.nickname, player.characterType);
             await newPlayer.initGraphics(scene);
-            scene._renderObjects.push(newPlayer);
+            console.log('[%s] Player \"%s\"(%s) joined the world',
+                new Date().toISOString(),
+                newPlayer.nickname,
+                newPlayer.id
+            );
         }
         // Update client players to server players
         for (const player of this.getPlayers()) {
@@ -793,5 +960,6 @@ export default class GameWorld {
             player.health = serverPlayer.health;
             player.killCount = serverPlayer.killCount;
         }
+
     }
 }

@@ -29,10 +29,6 @@ class ServerApp {
         setInterval(() => {
             console.log('[%s] Total players: %s', moment().format('YYYY-MM-DD HH:mm:ss'), this.gameWorld.getPlayers().length);
         }, 1000);
-
-        for(let i = 0; i < 100; i++) {
-            this.gameWorld.addPlayer('test' + Math.random(), 'test' + Math.random(), CHARACTERS_TYPE.GAVIN);
-        }
         // Test Code {END}
 
         //
@@ -90,10 +86,11 @@ class ServerApp {
                     );
                 }, 300);
                 console.log(
-                    '[%s] Player \"%s\"(%s) joined the world',
+                    '[%s] Player \"%s\"(%s) joined the world with character type %d',
                     moment().format('YYYY-MM-DD HH:mm:ss'),
                     nickname,
-                    socket.id
+                    socket.id,
+                    characterTypeId
                 );
                 break;
             }
