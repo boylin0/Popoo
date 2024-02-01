@@ -526,7 +526,6 @@ export default class GameWorld {
             player.disposeGraphics(scene);
             scene._renderObjects = scene._renderObjects.filter(o => o.id !== player.id);
         }
-        console.log(serverPlayers)
         // Update client players to server players
         for (const player of localPlayers) {
             const serverPlayer = serverPlayers.find(p => p.id === player.id);
