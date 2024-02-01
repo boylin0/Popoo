@@ -481,9 +481,12 @@ export default class GameWorld {
      * @param {GamePacket} packet
      * @returns {void}
      * */
-    setSyncPacket(packet) {
-        const players = packet.readInt32();
-        for (let i = 0; i < players; i++) {
+    async setSyncPacket(scene, packet) {
+        const localPlayers = this.getPlayers();
+        const serverPlayerCount = packet.readInt32();
+        const serverPlayers = [];
+        // remove players
+        for (let i = 0; i < serverPlayerCount; i++) {
             const id = packet.readString();
             const nickname = packet.readString();
             const x = packet.readFloat32();
@@ -495,17 +498,46 @@ export default class GameWorld {
             const velocityY = packet.readFloat32();
             const health = packet.readInt32();
             const killCount = packet.readInt32();
-            let player = this.getPlayer(id);
-            if (!player) {
-                player = this.addPlayer(id, nickname);
-            }
-            Matter.Body.setPosition(player.body, { x, y });
-            Matter.Body.setAngle(player.body, angle);
-            Matter.Body.setAngularVelocity(player.body, angularVelocity);
-            Matter.Body.setAngularSpeed(player.body, angularSpeed);
-            Matter.Body.setVelocity(player.body, { x: velocityX, y: velocityY });
-            player.health = health;
-            player.killCount = killCount;
+            serverPlayers.push({
+                id,
+                nickname,
+                x,
+                y,
+                angle,
+                angularVelocity,
+                angularSpeed,
+                velocityX,
+                velocityY,
+                health,
+                killCount,
+            });
+        }
+        // Add new players
+        for (const player of serverPlayers) {
+            if (localPlayers.find(p => p.id === player.id)) continue;
+            const newPlayer = this.addPlayer(player.id, player.nickname);
+            await newPlayer.initGraphics(scene);
+            scene._renderObjects.push(newPlayer);
+        }
+        // Remove old players
+        for (const player of localPlayers) {
+            if (serverPlayers.find(p => p.id === player.id)) continue;
+            this.removePlayer(player.id);
+            player.disposeGraphics(scene);
+            scene._renderObjects = scene._renderObjects.filter(o => o.id !== player.id);
+        }
+        console.log(serverPlayers)
+        // Update client players to server players
+        for (const player of localPlayers) {
+            const serverPlayer = serverPlayers.find(p => p.id === player.id);
+            if (!serverPlayer) continue;
+            Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
+            Matter.Body.setAngle(player.body, serverPlayer.angle);
+            Matter.Body.setAngularVelocity(player.body, serverPlayer.angularVelocity);
+            Matter.Body.setAngularSpeed(player.body, serverPlayer.angularSpeed);
+            Matter.Body.setVelocity(player.body, { x: serverPlayer.velocityX, y: serverPlayer.velocityY });
+            player.health = serverPlayer.health;
+            player.killCount = serverPlayer.killCount;
         }
     }
 }

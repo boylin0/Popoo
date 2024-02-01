@@ -37,7 +37,6 @@ class WorldScene extends PIXI.Container {
         const socketio = this._app.socketio;
 
         const gameWorld = new GameWorld();
-
         gameWorld.start(170);
 
         socketio.on('packet', async (data) => {
@@ -50,88 +49,44 @@ class WorldScene extends PIXI.Container {
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerMoveForward(id);
+                            gameWorld.getPlayer(id).moveForward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerMoveForwardEnd(id);
+                            gameWorld.getPlayer(id).moveForwardEnd(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerMoveBackward(id);
+                            gameWorld.getPlayer(id).moveBackward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerMoveBackwardEnd(id);
+                            gameWorld.getPlayer(id).moveBackwardEnd(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_JUMP: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerJump(id);
+                            gameWorld.getPlayer(id).jump(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_ATTACK: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.playerAttack(id);
+                            gameWorld.getPlayer(id).attack(id);
                             break;
                         }
                     }
                     break;
                 }
                 case PACKET_TYPE.SYNC_WORLD: {
-                    // TODO: Sync world with setSyncPacket
-                    //gameWorld.setSyncPacket(packet);
-                    const clientPlayers = gameWorld.getPlayers();
-                    const serverPlayers = [];
-                    const serverPlayerCount = packet.readInt32();
-                    for (let i = 0; i < serverPlayerCount; i++) {
-                        const id = packet.readString();
-                        const nickname = packet.readString();
-                        const x = packet.readFloat32();
-                        const y = packet.readFloat32();
-                        const angle = packet.readFloat32();
-                        const angleVelocity = packet.readFloat32();
-                        const angularSpeed = packet.readFloat32();
-                        const vx = packet.readFloat32();
-                        const vy = packet.readFloat32();
-                        const health = packet.readInt32();
-                        const killCount = packet.readInt32();
-                        serverPlayers.push({ id, nickname, killCount, x, y, angle, angleVelocity, angularSpeed, vx, vy, health });
-                    }
-                    // Add new players
-                    for (const player of serverPlayers) {
-                        if (clientPlayers.find(p => p.id === player.id)) continue;
-                        const newPlayer = gameWorld.addPlayer(player.id, player.nickname);
-                        await newPlayer.initGraphics(this);
-                        this._renderObjects.push(newPlayer);
-                    }
-                    // Remove old players
-                    for (const player of clientPlayers) {
-                        if (serverPlayers.find(p => p.id === player.id)) continue;
-                        gameWorld.removePlayer(player.id);
-                        player.disposeGraphics(this);
-                        this._renderObjects = this._renderObjects.filter(o => o.id !== player.id);
-                    }
-                    // Update client players to server players
-                    for (const player of clientPlayers) {
-                        const serverPlayer = serverPlayers.find(p => p.id === player.id);
-                        if (!serverPlayer) continue;
-                        Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
-                        Matter.Body.setAngle(player.body, serverPlayer.angle);
-                        Matter.Body.setAngularVelocity(player.body, serverPlayer.angleVelocity);
-                        Matter.Body.setAngularSpeed(player.body, serverPlayer.angularSpeed);
-                        Matter.Body.setVelocity(player.body, { x: serverPlayer.vx, y: serverPlayer.vy });
-                        player.health = serverPlayer.health;
-                        player.killCount = serverPlayer.killCount;
-                    }
+                    gameWorld.setSyncPacket(this, packet);
                     break;
                 }
             }
@@ -154,7 +109,7 @@ class WorldScene extends PIXI.Container {
 
         //this._myBunny = gameWorld.get
 
-        this._world = gameWorld;
+        this.gameWorld = gameWorld;
 
         /** @type {Keyboard} */
         this._keyboard = await import('pixi.js-keyboard');
@@ -197,9 +152,9 @@ class WorldScene extends PIXI.Container {
             object.renderGraphics();
         }
 
-        this.targetCameraToSprite(this._world.getPlayer(this._app.socketio.id)?.graphics);
+        this.targetCameraToSprite(this.gameWorld.getPlayer(this._app.socketio.id)?.graphics);
 
-        const world = this._world;
+        const world = this.gameWorld;
         const socketIoId = this._app.socketio.id;
         if (this._keyboard.isKeyPressed('ArrowLeft')) {
             world.getPlayer(socketIoId).moveBackward();
