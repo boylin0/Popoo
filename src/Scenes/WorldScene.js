@@ -43,6 +43,10 @@ class WorldScene extends PIXI.Container {
             const packet = new GamePacket(data);
             const type = packet.readInt16();
             switch (type) {
+                case PACKET_TYPE.SYNC_WORLD: {
+                    gameWorld.setSyncPacket(this, packet);
+                    break;
+                }
                 case PACKET_TYPE.WORLD_EVENT: {
                     const event = packet.readInt16();
                     switch (event) {
@@ -83,10 +87,6 @@ class WorldScene extends PIXI.Container {
                             break;
                         }
                     }
-                    break;
-                }
-                case PACKET_TYPE.SYNC_WORLD: {
-                    gameWorld.setSyncPacket(this, packet);
                     break;
                 }
             }
