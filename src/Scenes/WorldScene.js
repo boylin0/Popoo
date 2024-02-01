@@ -4,7 +4,7 @@ import * as PIXI from 'pixi.js';
 import { Application, Assets, Sprite } from 'pixi.js';
 
 import Matter from 'matter-js';
-import GameWorld, { Utils } from '@/GameWorld';
+import GameWorld, { Floor, Player, Utils } from '@/GameWorld';
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/GamePacket';
 
 class WorldScene extends PIXI.Container {
@@ -53,37 +53,37 @@ class WorldScene extends PIXI.Container {
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).moveForward(id);
+                            gameWorld.getPlayer(id)?.moveForward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_FORWARD_END: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).moveForwardEnd(id);
+                            gameWorld.getPlayer(id)?.moveForwardEnd(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).moveBackward(id);
+                            gameWorld.getPlayer(id)?.moveBackward(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_MOVE_BACKWARD_END: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).moveBackwardEnd(id);
+                            gameWorld.getPlayer(id)?.moveBackwardEnd(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_JUMP: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).jump(id);
+                            gameWorld.getPlayer(id)?.jump(id);
                             break;
                         }
                         case WORLD_EVENT.PLAYER_ATTACK: {
                             const id = packet.readString();
                             if (id === socketio.id) break;
-                            gameWorld.getPlayer(id).attack(id);
+                            gameWorld.getPlayer(id)?.attack(id);
                             break;
                         }
                     }
@@ -92,22 +92,19 @@ class WorldScene extends PIXI.Container {
             }
         });
 
-        const floors = gameWorld.getFloors();
-        const players = gameWorld.getPlayers();
-
-        for (const floor of floors) {
-            console.log('floor', floor);
-            await floor.initGraphics(this);
-            this._renderObjects.push(floor);
+        const entities = gameWorld.getEntities();
+        for (const entity of entities) {
+            if (entity instanceof Floor) {
+                await entity.initGraphics(this);
+                this._renderObjects.push(entity);
+                continue;
+            }
+            if (entity instanceof Player) {
+                await entity.initGraphics(this);
+                this._renderObjects.push(entity);
+                continue;
+            }
         }
-
-        for (const player of players) {
-            console.log('player', player);
-            await player.initGraphics(this);
-            this._renderObjects.push(player);
-        }
-
-        //this._myBunny = gameWorld.get
 
         this.gameWorld = gameWorld;
 

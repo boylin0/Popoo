@@ -18,7 +18,7 @@ export const Utils = {
     }
 }
 
-class Floor {
+export class Floor {
     constructor(gameWorld, x, y, width, height) {
         const body = Matter.Bodies.rectangle(x, y, width, height, { isStatic: true });
         /** @type {GameWorld} */
@@ -56,7 +56,7 @@ class Floor {
 }
 
 
-class Player {
+export class Player {
     constructor(gameWorld, id, nickname, x, y) {
         const body = Matter.Bodies.rectangle(x, y, 80, 80, { inertia: Infinity });
 
@@ -334,7 +334,7 @@ export default class GameWorld {
 
     constructor() {
         this._engine = Matter.Engine.create();
-        this._objects = [];
+        this._entities = [];
         this._tickInterval = null;
         this._tickRate = 60;
         this.nextTimestep = null;
@@ -353,15 +353,7 @@ export default class GameWorld {
      * @returns {Floor[]}
      */
     getFloors() {
-        return this._objects.filter(object => object instanceof Floor) || [];
-    }
-
-    /**
-     * 
-     * @returns {ItemBall[]}
-     */
-    getItemBalls() {
-        return this._objects.filter(object => object instanceof ItemBall) || [];
+        return this.getEntities(Floor);
     }
 
     /**
@@ -369,12 +361,17 @@ export default class GameWorld {
      * @returns {Player[]}
      */
     getPlayers() {
-        return this._objects.filter(object => object instanceof Player) || [];
+        return this.getEntities(Player);
     }
 
     /** @returns {Player} */
     getPlayer(id) {
-        return this._objects.find(player => player.id === id);
+        return this.getEntities(Player).find(player => player.id === id);
+    }
+
+    getEntities(entityType = null) {
+        if (!entityType) return this._entities;
+        return this._entities.filter(object => object instanceof entityType) || [];
     }
 
     start(tickRate = 20) {
@@ -436,16 +433,27 @@ export default class GameWorld {
         }
     }
 
+    addEntity(entity) {
+        this._entities.push(entity);
+        return entity;
+    }
+
+    removeEntity(entity) {
+        entity.disposeGraphics();
+        this._entities = this._entities.filter(object => object !== entity);
+    }
+
     addFloor(x, y, width, height) {
         const floor = new Floor(this, x, y, width, height);
         Matter.World.add(this.world, floor.body);
-        this._objects.push(floor);
+        this.addEntity(floor);
+        return floor;
     }
 
     addPlayer(id, nickname) {
         const player = new Player(this, id, nickname, 100, 100);
         Matter.World.add(this._engine.world, player.body);
-        this._objects.push(player);
+        this.addEntity(player);
         return player;
     }
 
@@ -453,7 +461,7 @@ export default class GameWorld {
         const player = this.getPlayer(id);
         if (!player) return;
         Matter.World.remove(this._engine.world, player.body);
-        this._objects = this._objects.filter(object => object !== player);
+        this._entities = this._entities.filter(object => object !== player);
     }
 
     getSyncPacket() {
@@ -512,19 +520,19 @@ export default class GameWorld {
                 killCount,
             });
         }
+        // Remove old players
+        for (const player of localPlayers) {
+            if (serverPlayers.find(p => p.id === player.id)) continue;
+            player.disposeGraphics(scene);
+            this.removePlayer(player.id);
+            scene._renderObjects = scene._renderObjects.filter(o => o.id !== player.id);
+        }
         // Add new players
         for (const player of serverPlayers) {
             if (localPlayers.find(p => p.id === player.id)) continue;
             const newPlayer = this.addPlayer(player.id, player.nickname);
             await newPlayer.initGraphics(scene);
             scene._renderObjects.push(newPlayer);
-        }
-        // Remove old players
-        for (const player of localPlayers) {
-            if (serverPlayers.find(p => p.id === player.id)) continue;
-            this.removePlayer(player.id);
-            player.disposeGraphics(scene);
-            scene._renderObjects = scene._renderObjects.filter(o => o.id !== player.id);
         }
         // Update client players to server players
         for (const player of localPlayers) {
