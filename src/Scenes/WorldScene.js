@@ -99,11 +99,6 @@ class WorldScene extends PIXI.Container {
                 this._renderObjects.push(entity);
                 continue;
             }
-            if (entity instanceof Player) {
-                await entity.initGraphics(this);
-                this._renderObjects.push(entity);
-                continue;
-            }
         }
 
         this.gameWorld = gameWorld;

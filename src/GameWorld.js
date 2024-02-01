@@ -490,7 +490,6 @@ export default class GameWorld {
      * @returns {void}
      * */
     async setSyncPacket(scene, packet) {
-        const localPlayers = this.getPlayers();
         const serverPlayerCount = packet.readInt32();
         const serverPlayers = [];
         // remove players
@@ -521,7 +520,7 @@ export default class GameWorld {
             });
         }
         // Remove old players
-        for (const player of localPlayers) {
+        for (const player of this.getPlayers()) {
             if (serverPlayers.find(p => p.id === player.id)) continue;
             player.disposeGraphics(scene);
             this.removePlayer(player.id);
@@ -529,13 +528,13 @@ export default class GameWorld {
         }
         // Add new players
         for (const player of serverPlayers) {
-            if (localPlayers.find(p => p.id === player.id)) continue;
+            if (this.getPlayer(player.id)) continue;
             const newPlayer = this.addPlayer(player.id, player.nickname);
             await newPlayer.initGraphics(scene);
             scene._renderObjects.push(newPlayer);
         }
         // Update client players to server players
-        for (const player of localPlayers) {
+        for (const player of this.getPlayers()) {
             const serverPlayer = serverPlayers.find(p => p.id === player.id);
             if (!serverPlayer) continue;
             Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y });
