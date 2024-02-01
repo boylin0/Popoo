@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import * as PIXI from 'pixi.js';
-import GamePacket, { PACKET_TYPE } from './GamePacket.js';
+import GamePacket, { CHARACTERS_TYPE, PACKET_TYPE } from './GamePacket.js';
 
 const TIMESTEP = 1000 / 60;
 
@@ -57,7 +57,10 @@ export class Floor {
 
 
 export class Player {
-    constructor(gameWorld, id, nickname, x, y) {
+    constructor(gameWorld, id, nickname, characterType, x, y) {
+
+        this.characterType = characterType;
+
         const body = Matter.Bodies.rectangle(x, y, 80, 80, { inertia: Infinity });
 
         /** @type {GameWorld} */
@@ -297,7 +300,7 @@ export class Player {
     jump() {
         if (Date.now() - this._lastJumpTimestamp < 100) return;
         if (this._isGrounded) {
-            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.2 });
+            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.3 });
             this._lastJumpTimestamp = Date.now();
         }
     }
@@ -313,7 +316,7 @@ export class Player {
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance > 200) continue;
             const angle = Math.atan2(dy, dx);
-            const force = 0.5;
+            const force = 0.3;
             const fx = force * Math.cos(angle);
             const fy = force * Math.sin(angle);
             Matter.Body.applyForce(otherPlayer.body, otherPlayer.body.position, { x: fx, y: fy });
@@ -327,6 +330,250 @@ export class Player {
         strikeEffect.visible = true;
         strikeEffect.gotoAndPlay(0);
 
+    }
+}
+
+export class Gavin extends Player {
+    constructor(gameWorld, id, nickname, x, y) {
+        super(gameWorld, id, nickname, CHARACTERS_TYPE.GAVIN, x, y);
+        this.characterType = CHARACTERS_TYPE.GAVIN;
+    }
+
+    async initGraphics(scene) {
+
+        // load assets
+        const bunnyTextureArray = await Utils.loadAssets([
+            import('@/assets/gavin/gavin_idle00.png'),
+            import('@/assets/gavin/gavin_idle01.png'),
+            import('@/assets/gavin/gavin_idle02.png'),
+            import('@/assets/gavin/gavin_idle03.png'),
+            import('@/assets/gavin/gavin_idle04.png'),
+            import('@/assets/gavin/gavin_idle05.png'),
+            import('@/assets/gavin/gavin_idle06.png'),
+            import('@/assets/gavin/gavin_idle07.png'),
+            import('@/assets/gavin/gavin_idle08.png'),
+            import('@/assets/gavin/gavin_idle09.png'),
+            import('@/assets/gavin/gavin_idle10.png'),
+            import('@/assets/gavin/gavin_idle11.png'),
+            import('@/assets/gavin/gavin_idle12.png'),
+            import('@/assets/gavin/gavin_idle13.png'),
+            import('@/assets/gavin/gavin_idle14.png'),
+            import('@/assets/gavin/gavin_idle15.png'),
+            import('@/assets/gavin/gavin_idle16.png'),
+            import('@/assets/gavin/gavin_idle17.png'),
+            import('@/assets/gavin/gavin_idle18.png'),
+            import('@/assets/gavin/gavin_idle19.png'),
+            import('@/assets/gavin/gavin_idle20.png'),
+        ]);
+
+        const container = new PIXI.Container();
+
+        // Bunny
+        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
+        bunny.anchor.set(0.5, 0.7);
+        bunny.animationSpeed = 0.1;
+        bunny.play();
+        bunny.width = 125;
+        bunny.height = 125;
+        container.addChild(bunny);
+
+        const uiContainer = new PIXI.Container();
+
+        // Health bar
+        const healthBar = new PIXI.Graphics();
+        healthBar.name = 'healthBar';
+        healthBar.beginFill(0xff0000);
+        healthBar.drawRect(0, 0, 100, 10);
+        healthBar.endFill();
+        healthBar.beginFill(0x00ff00);
+        healthBar.drawRect(0, 0, this._health, 10);
+        healthBar.endFill();
+        healthBar.position.set(-50, -60);
+        uiContainer.addChild(healthBar);
+
+        // Nickname
+        const nicknameText = new PIXI.Text(this.nickname, {
+            fill: 0xffffff,
+            align: 'center',
+        });
+        nicknameText.anchor.set(0.5);
+        nicknameText.position.set(0, -80);
+        uiContainer.addChild(nicknameText);
+
+        this.graphics = container;
+
+        // strike effect
+        const strikeEffectTexture = await Utils.loadAssets([
+            import('@/assets/attack/attack1_00.png'),
+            import('@/assets/attack/attack1_01.png'),
+            import('@/assets/attack/attack1_02.png'),
+            import('@/assets/attack/attack1_03.png'),
+            import('@/assets/attack/attack1_04.png'),
+            import('@/assets/attack/attack1_05.png'),
+            import('@/assets/attack/attack1_06.png'),
+            import('@/assets/attack/attack1_07.png'),
+            import('@/assets/attack/attack1_08.png'),
+            import('@/assets/attack/attack1_09.png'),
+            import('@/assets/attack/attack1_10.png'),
+            import('@/assets/attack/attack1_11.png'),
+            import('@/assets/attack/attack1_12.png'),
+            import('@/assets/attack/attack1_13.png'),
+            import('@/assets/attack/attack1_14.png'),
+            import('@/assets/attack/attack1_15.png'),
+            import('@/assets/attack/attack1_16.png'),
+        ]);
+        const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
+        strikeEffect.name = 'strikeEffect';
+        strikeEffect.anchor.set(0.5);
+        strikeEffect.width = 200;
+        strikeEffect.height = 200;
+        strikeEffect.scale.set(1.5);
+        strikeEffect.visible = false;
+        strikeEffect.animationSpeed = 0.9;
+        strikeEffect.loop = false;
+        strikeEffect.onComplete = () => {
+            strikeEffect.visible = false;
+        };
+        uiContainer.addChild(strikeEffect);
+
+        // kill count
+        const killCountText = new PIXI.Text('Kill: 0', {
+            fill: 0xffffff,
+            align: 'center',
+            fontSize: 14,
+        });
+        killCountText.name = 'killCountText';
+        killCountText.anchor.set(0.5);
+        killCountText.position.set(0, -120);
+        uiContainer.addChild(killCountText);
+
+        this._uiGraphics = uiContainer;
+
+        scene.addChild(container);
+        scene.addChild(uiContainer);
+        return container;
+    }
+}
+
+export class NightShade extends Player {
+    constructor(gameWorld, id, nickname, x, y) {
+        super(gameWorld, id, nickname, CHARACTERS_TYPE.NIGHTSHADE, x, y);
+        this.characterType = CHARACTERS_TYPE.NIGHTSHADE;
+    }
+
+    async initGraphics(scene) {
+
+        // load assets
+        const bunnyTextureArray = await Utils.loadAssets([
+            import('@/assets/nightshade/nightshade_idle00.png'),
+            import('@/assets/nightshade/nightshade_idle01.png'),
+            import('@/assets/nightshade/nightshade_idle02.png'),
+            import('@/assets/nightshade/nightshade_idle03.png'),
+            import('@/assets/nightshade/nightshade_idle04.png'),
+            import('@/assets/nightshade/nightshade_idle05.png'),
+            import('@/assets/nightshade/nightshade_idle06.png'),
+            import('@/assets/nightshade/nightshade_idle07.png'),
+            import('@/assets/nightshade/nightshade_idle08.png'),
+            import('@/assets/nightshade/nightshade_idle09.png'),
+            import('@/assets/nightshade/nightshade_idle10.png'),
+            import('@/assets/nightshade/nightshade_idle11.png'),
+            import('@/assets/nightshade/nightshade_idle12.png'),
+            import('@/assets/nightshade/nightshade_idle13.png'),
+            import('@/assets/nightshade/nightshade_idle14.png'),
+            import('@/assets/nightshade/nightshade_idle15.png'),
+            import('@/assets/nightshade/nightshade_idle16.png'),
+            import('@/assets/nightshade/nightshade_idle17.png'),
+            import('@/assets/nightshade/nightshade_idle18.png'),
+            import('@/assets/nightshade/nightshade_idle19.png'),
+            import('@/assets/nightshade/nightshade_idle20.png'),
+        ]);
+
+        const container = new PIXI.Container();
+
+        // Bunny
+        const bunny = new PIXI.AnimatedSprite(bunnyTextureArray);
+        bunny.anchor.set(0.5, 0.7);
+        bunny.animationSpeed = 0.1;
+        bunny.play();
+        bunny.width = 125;
+        bunny.height = 125;
+        container.addChild(bunny);
+
+        const uiContainer = new PIXI.Container();
+
+        // Health bar
+        const healthBar = new PIXI.Graphics();
+        healthBar.name = 'healthBar';
+        healthBar.beginFill(0xff0000);
+        healthBar.drawRect(0, 0, 100, 10);
+        healthBar.endFill();
+        healthBar.beginFill(0x00ff00);
+        healthBar.drawRect(0, 0, this._health, 10);
+        healthBar.endFill();
+        healthBar.position.set(-50, -60);
+        uiContainer.addChild(healthBar);
+
+        // Nickname
+        const nicknameText = new PIXI.Text(this.nickname, {
+            fill: 0xffffff,
+            align: 'center',
+        });
+        nicknameText.anchor.set(0.5);
+        nicknameText.position.set(0, -80);
+        uiContainer.addChild(nicknameText);
+
+        this.graphics = container;
+
+        // strike effect
+        const strikeEffectTexture = await Utils.loadAssets([
+            import('@/assets/attack/attack1_00.png'),
+            import('@/assets/attack/attack1_01.png'),
+            import('@/assets/attack/attack1_02.png'),
+            import('@/assets/attack/attack1_03.png'),
+            import('@/assets/attack/attack1_04.png'),
+            import('@/assets/attack/attack1_05.png'),
+            import('@/assets/attack/attack1_06.png'),
+            import('@/assets/attack/attack1_07.png'),
+            import('@/assets/attack/attack1_08.png'),
+            import('@/assets/attack/attack1_09.png'),
+            import('@/assets/attack/attack1_10.png'),
+            import('@/assets/attack/attack1_11.png'),
+            import('@/assets/attack/attack1_12.png'),
+            import('@/assets/attack/attack1_13.png'),
+            import('@/assets/attack/attack1_14.png'),
+            import('@/assets/attack/attack1_15.png'),
+            import('@/assets/attack/attack1_16.png'),
+        ]);
+        const strikeEffect = new PIXI.AnimatedSprite(strikeEffectTexture);
+        strikeEffect.name = 'strikeEffect';
+        strikeEffect.anchor.set(0.5);
+        strikeEffect.width = 200;
+        strikeEffect.height = 200;
+        strikeEffect.scale.set(1.5);
+        strikeEffect.visible = false;
+        strikeEffect.animationSpeed = 0.9;
+        strikeEffect.loop = false;
+        strikeEffect.onComplete = () => {
+            strikeEffect.visible = false;
+        };
+        uiContainer.addChild(strikeEffect);
+
+        // kill count
+        const killCountText = new PIXI.Text('Kill: 0', {
+            fill: 0xffffff,
+            align: 'center',
+            fontSize: 14,
+        });
+        killCountText.name = 'killCountText';
+        killCountText.anchor.set(0.5);
+        killCountText.position.set(0, -120);
+        uiContainer.addChild(killCountText);
+
+        this._uiGraphics = uiContainer;
+
+        scene.addChild(container);
+        scene.addChild(uiContainer);
+        return container;
     }
 }
 
@@ -450,11 +697,21 @@ export default class GameWorld {
         return floor;
     }
 
-    addPlayer(id, nickname) {
-        const player = new Player(this, id, nickname, 100, 100);
-        Matter.World.add(this._engine.world, player.body);
-        this.addEntity(player);
-        return player;
+    addPlayer(id, nickname, characterType) {
+        let character = null;
+        if (characterType === CHARACTERS_TYPE.GAVIN) {
+            character = new Player(this, id, nickname, 1, 100, 100);
+        }
+        if (characterType === CHARACTERS_TYPE.NIGHTSHADE) {
+            character = new NightShade(this, id, nickname, 100, 100);
+        }
+        if (!character) {
+            console.error('Unknown character type: %s', characterType);
+            return;
+        }
+        Matter.World.add(this._engine.world, character.body);
+        this.addEntity(character);
+        return character;
     }
 
     removePlayer(id) {
@@ -469,17 +726,18 @@ export default class GameWorld {
         const packet = new GamePacket();
         packet.writeInt32(players.length);
         for (const player of players) {
-            packet.writeString(player.id);
-            packet.writeString(player.nickname);
-            packet.writeFloat32(player.body.position.x);
-            packet.writeFloat32(player.body.position.y);
-            packet.writeFloat32(player.body.angle);
-            packet.writeFloat32(player.body.angularVelocity);
-            packet.writeFloat32(player.body.angularSpeed);
-            packet.writeFloat32(player.body.velocity.x);
-            packet.writeFloat32(player.body.velocity.y);
-            packet.writeInt32(player.health);
-            packet.writeInt32(player.killCount);
+            packet.writeString(player.id)
+                .writeInt16(player.characterType)
+                .writeString(player.nickname)
+                .writeFloat32(player.body.position.x)
+                .writeFloat32(player.body.position.y)
+                .writeFloat32(player.body.angle)
+                .writeFloat32(player.body.angularVelocity)
+                .writeFloat32(player.body.angularSpeed)
+                .writeFloat32(player.body.velocity.x)
+                .writeFloat32(player.body.velocity.y)
+                .writeInt32(player.health)
+                .writeInt32(player.killCount)
         }
         return packet.getData();
     }
@@ -494,29 +752,19 @@ export default class GameWorld {
         const serverPlayers = [];
         // remove players
         for (let i = 0; i < serverPlayerCount; i++) {
-            const id = packet.readString();
-            const nickname = packet.readString();
-            const x = packet.readFloat32();
-            const y = packet.readFloat32();
-            const angle = packet.readFloat32();
-            const angularVelocity = packet.readFloat32();
-            const angularSpeed = packet.readFloat32();
-            const velocityX = packet.readFloat32();
-            const velocityY = packet.readFloat32();
-            const health = packet.readInt32();
-            const killCount = packet.readInt32();
             serverPlayers.push({
-                id,
-                nickname,
-                x,
-                y,
-                angle,
-                angularVelocity,
-                angularSpeed,
-                velocityX,
-                velocityY,
-                health,
-                killCount,
+                id: packet.readString(),
+                characterType: packet.readInt16(),
+                nickname: packet.readString(),
+                x: packet.readFloat32(),
+                y: packet.readFloat32(),
+                angle: packet.readFloat32(),
+                angularVelocity: packet.readFloat32(),
+                angularSpeed: packet.readFloat32(),
+                velocityX: packet.readFloat32(),
+                velocityY: packet.readFloat32(),
+                health: packet.readInt32(),
+                killCount: packet.readInt32(),
             });
         }
         // Remove old players
@@ -529,7 +777,7 @@ export default class GameWorld {
         // Add new players
         for (const player of serverPlayers) {
             if (this.getPlayer(player.id)) continue;
-            const newPlayer = this.addPlayer(player.id, player.nickname);
+            const newPlayer = this.addPlayer(player.id, player.nickname, player.characterType);
             await newPlayer.initGraphics(scene);
             scene._renderObjects.push(newPlayer);
         }

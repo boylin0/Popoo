@@ -16,6 +16,12 @@ export const WORLD_EVENT = {
     PLAYER_ATTACK: 6,
 }
 
+export const CHARACTERS_TYPE = {
+    NULL: 0,
+    GAVIN: 1,
+    NIGHTSHADE: 2,
+}
+
 export default class GamePacket {
 
     constructor(data) {

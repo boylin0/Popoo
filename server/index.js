@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import moment from 'moment';
 
 import GameWorld from '../src/GameWorld.js';
-import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '../src/GamePacket.js';
+import GamePacket, { CHARACTERS_TYPE, PACKET_TYPE, WORLD_EVENT } from '../src/GamePacket.js';
 
 class ServerApp {
 
@@ -24,6 +24,16 @@ class ServerApp {
             },
         });
         console.log('[%s] Server started', moment().format('YYYY-MM-DD HH:mm:ss'));
+
+        // Test Code {START}
+        setInterval(() => {
+            console.log('[%s] Total players: %s', moment().format('YYYY-MM-DD HH:mm:ss'), this.gameWorld.getPlayers().length);
+        }, 1000);
+
+        for(let i = 0; i < 100; i++) {
+            this.gameWorld.addPlayer('test' + Math.random(), 'test' + Math.random(), CHARACTERS_TYPE.GAVIN);
+        }
+        // Test Code {END}
 
         //
         // Listen for new connections
@@ -70,7 +80,8 @@ class ServerApp {
         switch (type) {
             case PACKET_TYPE.JOIN_WORLD: {
                 const nickname = packet.readString();
-                gameWorld.addPlayer(socket.id, nickname.substring(0, 12));
+                const characterTypeId = packet.readInt16();
+                gameWorld.addPlayer(socket.id, nickname.substring(0, 12), characterTypeId);
                 setInterval(() => {
                     socket.emit('packet', new GamePacket()
                         .writeInt16(PACKET_TYPE.SYNC_WORLD)
