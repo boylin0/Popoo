@@ -295,9 +295,9 @@ export class Player {
     }
 
     jump() {
-        if (Date.now() - this._lastJumpTimestamp < 80) return;
+        if (Date.now() - this._lastJumpTimestamp < 100) return;
         if (this._isGrounded) {
-            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.3 });
+            Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -0.2 });
             this._lastJumpTimestamp = Date.now();
         }
     }
