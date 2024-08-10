@@ -5,6 +5,7 @@ const {
   ProvidePlugin,
   HotModuleReplacementPlugin,
   CleanPlugin,
+  DefinePlugin,
 } = require('webpack')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
@@ -92,6 +93,16 @@ module.exports = {
     new HotModuleReplacementPlugin(),
     // This plugin will clean the dist folder before every build.
     new CleanPlugin(),
+    // This plugin defines variables that are available in the client code,
+    // only environment variables that start with REACT_APP_ will be available.
+    new DefinePlugin({
+      ...Object.keys(process.env).reduce((acc, key) => {
+        if (key.startsWith('REACT_APP_')) {
+          acc[`process.env.${key}`] = JSON.stringify(process.env[key])
+        }
+        return acc
+      }, {}),
+    }),
   ],
   performance: {
     hints: false,

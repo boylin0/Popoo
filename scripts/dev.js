@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config({ path: '.env' })
+
 const nodemon = require('nodemon')
 const express = require('express')
 const { createServer } = require('http')
@@ -13,8 +16,8 @@ const node = nodemon({
   exec: 'node -r @swc-node/register',
   script: 'src/server/main.js',
   ext: 'js json',
-  watch: ['src/server', 'webpack.config.js'],
-  env: { NODE_ENV: 'development' },
+  watch: ['src/server'],
+  env: { NODE_ENV: 'development', ...process.env },
   verbose: true,
   quiet: false,
 })
@@ -30,8 +33,8 @@ app.use(webpackDevMiddleware(compiler))
 app.use(webpackHotMiddleware(compiler))
 
 // Proxy socket.io requests to the backend
-app.use('/socket.io', createProxyMiddleware({
-  target: 'http://localhost:2500/socket.io', 
+app.use(`${process.env.REACT_APP_SOCKETIO_PATH}`, createProxyMiddleware({
+  target: `http://localhost:2500${process.env.REACT_APP_SOCKETIO_PATH}`, 
   ws: true,
   proxyTimeout: 3000,
 }))

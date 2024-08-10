@@ -231,7 +231,7 @@ class ServerApp {
 export async function registerSocketIoServer(httpServer) {
   // socket server
   const io = new SocketIOServer(httpServer, {
-    path: '/socket.io',
+    path: process.env.REACT_APP_SOCKETIO_PATH,
   })
   const serverApp = new ServerApp()
   serverApp.start(io)

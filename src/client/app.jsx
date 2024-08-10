@@ -64,7 +64,7 @@ function App() {
   useEffect(() => {
     // Init Socket.io
     const socket = io(window.location.host, {
-      path: '/socket.io',
+      path: process.env.REACT_APP_SOCKETIO_PATH,
     })
     socket.on('connect', () => {
       initGame(socket)
