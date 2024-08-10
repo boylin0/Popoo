@@ -141,8 +141,6 @@ class WorldScene extends PIXI.Container {
     const world = this.gameWorld
     const socketIoId = this._app.socketio.id
 
-    console.log(this._keyboard)
-
     if (this._keyboard.isKeyPressed('ArrowLeft')) {
       world.getPlayer(socketIoId).moveBackward()
       const socketio = this._app.socketio
