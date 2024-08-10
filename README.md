@@ -50,7 +50,15 @@ To build the project for production, run:
 npm run build
 ```
 
-### Technologies Used
+This will create a `dist` folder with the bundled assets and optimized code.
+
+To start the production server, run:
+
+```bash
+npm start
+```
+
+## Technologies Used
 
 * Socket.IO: Handles real-time communication between clients and the server.
 * PixiJS: A 2D rendering engine for creating interactive graphics and animations.
@@ -58,7 +66,7 @@ npm run build
 * SWC: A fast TypeScript/JavaScript compiler used for code transpilation.
 * Webpack: Bundles the application, allowing for modular code and optimized assets.
 
-### Contact
+## Contact
 
 For any questions or feedback, feel free to reach out to the project maintainer [boylin0](https://github.com/boylin0).
 
