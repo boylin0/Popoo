@@ -1,8 +1,6 @@
 # Popoo - Real-Time Multiplayer Game
 
-**Popoo** is a real-time multiplayer game where players can connect and battle against each other. The game is built using `Socket.IO` for real-time communication and `PixiJS` for interactive graphics. Players can move, attack, and outmaneuver opponents in a fast-paced environment.
-
-In Popoo, players connect to a server and enter a battle arena where they can move, attack, and outmaneuver opponents. The goal is to outlast other players by strategically using attacks and avoiding damage.
+**Popoo** is an engaging real-time multiplayer game where players can connect to a server and compete in a dynamic battle arena. The game is built using Socket.IO for seamless real-time communication, PixiJS for rich, interactive graphics, and Matter.js for physics-based interactions. In the arena, players can move, attack, and outmaneuver their opponents in a fast-paced environment. The gameplay is enhanced by the use of Matter.js, which adds a layer of interaction without focusing on realistic physics. The primary objective is to outlast other players by strategically utilizing attacks, skillfully avoiding damage, and taking advantage of the unique interactions within the game. With its emphasis on quick thinking, tactical maneuvering, and engaging gameplay.
 
 ![ScreenShot](https://github.com/boylin0/popoo/blob/main/screenshots_1.gif?raw=true)
 
