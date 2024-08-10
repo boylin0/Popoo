@@ -24,8 +24,8 @@
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/boylin0/popoo.git
-    cd popoo
+    git clone https://github.com/boylin0/Popoo.git
+    cd Popoo
     ```
 
 2. Install dependencies:
@@ -72,6 +72,6 @@ npm start
 
 ## Contact
 
-For any questions or feedback, feel free to reach out to the project maintainer [boylin0](https://github.com/boylin0).
+For any questions or feedback, feel free to reach out to me [boylin0](https://github.com/boylin0).
 
-Project Link: https://github.com/boylin0/popoo
+Project Link: https://github.com/boylin0/Popoo
