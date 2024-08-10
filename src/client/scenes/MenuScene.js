@@ -1,7 +1,7 @@
 'use client'
 
 import * as PIXI from 'pixi.js'
-import { Application, Assets, Sprite } from 'pixi.js'
+import { Sprite } from 'pixi.js'
 
 import GamePacket, { CHARACTERS_TYPE, PACKET_TYPE } from '@/shared/GamePacket'
 import { Utils } from '@/shared/GameWorld'

@@ -1,6 +1,6 @@
 import Matter from 'matter-js'
 import * as PIXI from 'pixi.js'
-import GamePacket, { CHARACTERS_TYPE, PACKET_TYPE } from './GamePacket.js'
+import GamePacket, { CHARACTERS_TYPE } from './GamePacket.js'
 
 const TIMESTEP = 1000 / 60
 

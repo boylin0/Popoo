@@ -1,8 +1,7 @@
 import * as PIXI from 'pixi.js'
-import { Application, Assets, Sprite } from 'pixi.js'
+import { Sprite } from 'pixi.js'
 
-import Matter from 'matter-js'
-import GameWorld, { Floor, Character, Utils } from '@/shared/GameWorld'
+import GameWorld, { Floor, Utils } from '@/shared/GameWorld'
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/shared/GamePacket'
 
 class WorldScene extends PIXI.Container {
