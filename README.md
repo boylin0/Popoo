@@ -9,6 +9,8 @@ In Popoo, players connect to a server and enter a battle arena where they can mo
 ## Features
 
 - **Real-Time Multiplayer**: Connect and play with others in real-time using `Socket.IO`.
+- **Physics Engine**: Powered by `MatterJS` for realistic movement and collision detection.
+- **Authoritative Game Server**: The server handles game logic and ensures fair gameplay.
 - **Interactive Graphics**: Powered by `PixiJS` for smooth and responsive 2D rendering.
 - **Fast Build**: Using `SWC` with `Webpack` for efficient code bundling and quick development iterations.
 - **Attack System**: Players can engage in combat, attacking each other in a fast-paced environment.
@@ -65,6 +67,10 @@ npm start
 * MatterJS: A 2D physics engine for handling collisions and movement.
 * SWC: A fast TypeScript/JavaScript compiler used for code transpilation.
 * Webpack: Bundles the application, allowing for modular code and optimized assets.
+
+## References
+
+- [Client-Server Game Architecture](https://www.gabrielgambetta.com/client-server-game-architecture.html)
 
 ## Contact
 
