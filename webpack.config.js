@@ -15,9 +15,9 @@ module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   output: {
-    path: path.resolve(__dirname, 'dist', 'client', 'static'),
-    filename: 'js/[name].[contenthash].js',
-    publicPath: '/static/',
+    path: path.resolve(__dirname, 'dist', 'client'),
+    filename: 'static/js/[name].[contenthash].js',
+    publicPath: '/',
   },
   module: {
     rules: [
@@ -58,7 +58,7 @@ module.exports = {
           {
             loader: 'file-loader',
             options: {
-              name: 'images/[name].[contenthash].[ext]',
+              name: 'static/images/[name].[contenthash].[ext]',
             },
           },
         ],
@@ -75,7 +75,7 @@ module.exports = {
     // This plugin will generate an HTML file with the script tag injected.
     new HtmlWebpackPlugin({
       template: './src/client/index.html',
-      filename: '../index.html',
+      filename: 'index.html',
     }),
     // This plugin will provide React as a global variable, so you don't need
     // to import React in every file.
@@ -84,7 +84,7 @@ module.exports = {
     }),
     // This plugin will extract the CSS into a separate file.
     new MiniCssExtractPlugin({
-      filename: 'css/[name].[contenthash].css',
+      filename: 'static/css/[name].[contenthash].css',
     }),
     // This plugin will minimize the CSS files.
     new CssMinimizerPlugin(),

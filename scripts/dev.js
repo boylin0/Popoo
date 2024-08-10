@@ -26,9 +26,8 @@ const server = createServer(app)
 
 // serve frontend static files
 const compiler = webpack(webpackConfig)
-app.use(webpackDevMiddleware(compiler, { writeToDisk: true }))
+app.use(webpackDevMiddleware(compiler))
 app.use(webpackHotMiddleware(compiler))
-app.use(express.static('dist/client'))
 
 // Proxy socket.io requests to the backend
 app.use('/socket.io', createProxyMiddleware({
