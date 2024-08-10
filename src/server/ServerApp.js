@@ -1,7 +1,7 @@
 import moment from 'moment'
 
 import GameWorld from '@/shared/GameWorld.js'
-import GamePacket, { CHARACTERS_TYPE, PACKET_TYPE, WORLD_EVENT } from '@/shared/GamePacket.js'
+import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/shared/GamePacket.js'
 
 import { Server as SocketIOServer } from 'socket.io'
 

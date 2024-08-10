@@ -7,7 +7,7 @@ import express from 'express'
 const app = express()
 const httpServer = createServer(app)
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end('This is a backend server, please visit the frontend server.')
 })

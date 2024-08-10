@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js'
-import { Sprite } from 'pixi.js'
 
 import GameWorld, { Floor, Utils } from '@/shared/GameWorld'
 import GamePacket, { PACKET_TYPE, WORLD_EVENT } from '@/shared/GamePacket'
@@ -111,7 +110,7 @@ class WorldScene extends PIXI.Container {
 
   /**
      * 
-     * @param {Sprite} sprite
+     * @param {import('pixi.js').Sprite} sprite
      */
   targetCameraToSprite(sprite, speed = 0.02) {
     if (!sprite) return
