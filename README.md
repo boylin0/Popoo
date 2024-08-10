@@ -59,6 +59,6 @@ npm run build
 
 ### Contact
 
-For any questions or feedback, feel free to reach out to the project maintainer at [boylin0](https://github.com/boylin0).
+For any questions or feedback, feel free to reach out to the project maintainer [boylin0](https://github.com/boylin0).
 
 Project Link: https://github.com/boylin0/popoo
