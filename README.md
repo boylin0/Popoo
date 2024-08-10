@@ -4,6 +4,8 @@
 
 In Popoo, players connect to a server and enter a battle arena where they can move, attack, and outmaneuver opponents. The goal is to outlast other players by strategically using attacks and avoiding damage.
 
+![ScreenShot](https://raw.githubusercontent.com/boylin0/popoo/main/screenshots_1.gif)
+
 ## Features
 
 - **Real-Time Multiplayer**: Connect and play with others in real-time using `Socket.IO`.
