@@ -54,6 +54,7 @@ npm run build
 
 * Socket.IO: Handles real-time communication between clients and the server.
 * PixiJS: A 2D rendering engine for creating interactive graphics and animations.
+* MatterJS: A 2D physics engine for handling collisions and movement.
 * SWC: A fast TypeScript/JavaScript compiler used for code transpilation.
 * Webpack: Bundles the application, allowing for modular code and optimized assets.
 
