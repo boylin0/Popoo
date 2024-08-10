@@ -8,6 +8,8 @@ async function compile() {
 
   // Compile the server-side code
   console.log('\x1b[33m%s\x1b[0m', 'Compiling server-side code...')
+
+  // Compile Server
   await new Promise((resolve) => {
     const swcProc = spawn('swc src/server -d dist --strip-leading-paths', {
       stdio: 'inherit',
@@ -18,6 +20,19 @@ async function compile() {
       resolve()
     })
   })
+
+  // Compile Shared
+  await new Promise((resolve) => {
+    const swcProc = spawn('swc src/shared -d dist --strip-leading-paths', {
+      stdio: 'inherit',
+      shell: true,
+    })
+    swcProc.on('close', (code) => {
+      console.log(`SWC process exited with code ${code}`)
+      resolve()
+    })
+  })
+
   console.log('Server-side code compiled completed!\n')
 
   // Compile the client-side code
