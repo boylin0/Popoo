@@ -7,7 +7,7 @@
     "dev": "node scripts/dev.js",
     "build": "node scripts/build.js",
     "start": "node scripts/start.js",
-    "lint": "eslint . --ext .js,.jsx",
+    "lint": "eslint ./src --ext .js,.jsx",
     "lint:fix": "eslint ./src --ext .js,.jsx --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
