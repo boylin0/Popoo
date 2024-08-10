@@ -780,7 +780,7 @@ export default class GameWorld {
           if (player._lastAttacker) {
             player._lastAttacker.health = 100
             player._lastAttacker.newKill()
-            console.log('[%s] Player \"%s\"(%s) killed player \"%s\"(%s)',
+            console.log('[%s] Player "%s"(%s) killed player "%s"(%s)',
               new Date().toISOString(),
               player._lastAttacker.nickname,
               player._lastAttacker.id,
@@ -942,7 +942,7 @@ export default class GameWorld {
       if (this.getPlayer(player.id)) continue
       const newPlayer = this.addPlayer(player.id, player.nickname, player.characterType)
       await newPlayer.initGraphics(scene)
-      console.log('[%s] Player \"%s\"(%s) joined the world',
+      console.log('[%s] Player "%s"(%s) joined the world',
         new Date().toISOString(),
         newPlayer.nickname,
         newPlayer.id

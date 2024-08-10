@@ -84,7 +84,7 @@ class ServerApp {
         //gameWorld.addPlayer(Math.random().toString(36).substring(7), Math.random() * 1000, CHARACTERS_TYPE.GAVIN);
       }, 300)
       console.log(
-        '[%s] Player \"%s\"(%s) joined the world with character type %d',
+        '[%s] Player "%s"(%s) joined the world with character type %d',
         moment().format('YYYY-MM-DD HH:mm:ss'),
         nickname,
         socket.id,
@@ -107,7 +107,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) move forward',
+          '[%s] Player "%s"(%s) move forward',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,
@@ -126,7 +126,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) move forward end',
+          '[%s] Player "%s"(%s) move forward end',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,
@@ -145,7 +145,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) move backward',
+          '[%s] Player "%s"(%s) move backward',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,
@@ -164,7 +164,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) move backward end',
+          '[%s] Player "%s"(%s) move backward end',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,
@@ -183,7 +183,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) jump',
+          '[%s] Player "%s"(%s) jump',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,
@@ -202,7 +202,7 @@ class ServerApp {
             .getData()
         )
         console.log(
-          '[%s] Player \"%s\"(%s) attack',
+          '[%s] Player "%s"(%s) attack',
           moment().format('YYYY-MM-DD HH:mm:ss'),
           player.nickname,
           id,

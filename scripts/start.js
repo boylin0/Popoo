@@ -28,7 +28,7 @@ async function run() {
   }))
   const PORT = process.env.PORT || 2600
   app.listen(PORT, () => {
-    console.log(`Server listening on port http://localhost:${PORT}`)
+    console.log(`Frontend Server listening on port http://localhost:${PORT}`)
   })
 }
 

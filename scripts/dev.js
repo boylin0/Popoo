@@ -39,5 +39,5 @@ app.use('/socket.io', createProxyMiddleware({
 // Start the development server
 const PORT = process.env.PORT || 2600
 server.listen(PORT, () => {
-  console.log(`Server listening on port http://localhost:${PORT}`)
+  console.log(`Frontend Server listening on port http://localhost:${PORT}`)
 })
