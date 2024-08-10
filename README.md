@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Popoo - Real-Time Multiplayer Game
+
+**Popoo** is a real-time multiplayer game where players can connect and battle against each other. The game is built using `Socket.IO` for real-time communication and `PixiJS` for interactive graphics. Players can move, attack, and outmaneuver opponents in a fast-paced environment.
+
+In Popoo, players connect to a server and enter a battle arena where they can move, attack, and outmaneuver opponents. The goal is to outlast other players by strategically using attacks and avoiding damage.
+
+## Features
+
+- **Real-Time Multiplayer**: Connect and play with others in real-time using `Socket.IO`.
+- **Interactive Graphics**: Powered by `PixiJS` for smooth and responsive 2D rendering.
+- **Fast Build**: Using `SWC` with `Webpack` for efficient code bundling and quick development iterations.
+- **Attack System**: Players can engage in combat, attacking each other in a fast-paced environment.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v20 or later)
+
+### Installation
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/boylin0/popoo.git
+    cd popoo
+    ```
+
+2. Install dependencies:
+
+    ```bash
+    npm install
+    ```
+
+3. Start the development server:
+
+    ```bash
+    npm run dev
+    ```
+
+   This will start the server and open the game in your default browser.
+
+### Build for Production
+
+To build the project for production, run:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Technologies Used
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+* Socket.IO: Handles real-time communication between clients and the server.
+* PixiJS: A 2D rendering engine for creating interactive graphics and animations.
+* SWC: A fast TypeScript/JavaScript compiler used for code transpilation.
+* Webpack: Bundles the application, allowing for modular code and optimized assets.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### Contact
 
-## Learn More
+For any questions or feedback, feel free to reach out to the project maintainer at [boylin0](https://github.com/boylin0).
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Project Link: https://github.com/boylin0/popoo
