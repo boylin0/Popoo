@@ -21,7 +21,7 @@ In Popoo, players connect to a server and enter a battle arena where they can mo
 
 - Node.js (v20 or later)
 
-### Installation
+### Quick Start
 
 1. Clone the repository:
 
