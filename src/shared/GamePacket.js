@@ -83,6 +83,7 @@ export default class GamePacket {
   }
 
   writeInt64(value) {
+    // eslint-disable-next-line no-loss-of-precision
     if (value > 0xFFFFFFFFFFFFFFFF) {
       throw new Error('Too large')
     }
