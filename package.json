@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@swc-node/register": "^1.10.9",
     "@swc/core": "^1.4.11",
     "css-loader": "^6.10.0",
     "css-minimizer-webpack-plugin": "^6.0.0",
