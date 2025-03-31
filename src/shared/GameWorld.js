@@ -952,7 +952,17 @@ export default class GameWorld {
     for (const player of this.getPlayers()) {
       const serverPlayer = serverPlayers.find(p => p.id === player.id)
       if (!serverPlayer) continue
-      Matter.Body.setPosition(player.body, { x: serverPlayer.x, y: serverPlayer.y })
+      
+      // Smooth movement using exponential smoothing
+      const smoothMove = (current, target, smoothingFactor, deltaTime) => {
+        return current + (target - current) * (1 - Math.exp(-smoothingFactor * deltaTime))
+      }
+      const deltaTime = TIMESTEP / 1000
+      const smoothingFactor = 3 // Adjust this value for desired smoothing
+      const smoothedX = smoothMove(player.body.position.x, serverPlayer.x, smoothingFactor, deltaTime)
+      const smoothedY = smoothMove(player.body.position.y, serverPlayer.y, smoothingFactor, deltaTime)
+      Matter.Body.setPosition(player.body, { x: smoothedX, y: smoothedY })
+      
       Matter.Body.setAngle(player.body, serverPlayer.angle)
       Matter.Body.setAngularVelocity(player.body, serverPlayer.angularVelocity)
       Matter.Body.setAngularSpeed(player.body, serverPlayer.angularSpeed)
