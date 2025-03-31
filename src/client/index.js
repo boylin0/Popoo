@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import { createRoot } from 'react-dom/client'
 
-import App from '@/client/App.jsx'
+import App from '@/client/app.jsx'
 
 // Workaround for HMR creating a new root on every HMR update
 if (window.root.render === undefined) {
