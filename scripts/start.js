@@ -29,6 +29,11 @@ async function run() {
   server.on('close', (code) => {
     console.log(`Server process exited with code ${code}`)
   })
+  process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down server...')
+    server.kill()
+    process.exit(0)
+  })
   // Start Socket.IO frontend server
   const app = express()
   app.use(express.static('dist/client'))
@@ -42,6 +47,8 @@ async function run() {
   app.listen(PORT, () => {
     console.log(`Frontend Server listening on port http://localhost:${PORT}`)
   })
+
+
 }
 
 run()

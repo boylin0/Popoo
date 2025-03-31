@@ -21,6 +21,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware')
 
 // Serve backend code
 process.env.SWCRC = 'true'
+
+/** @type {import('nodemon').Nodemon} */
 const node = nodemon({
   exec: 'node -r @swc-node/register',
   script: 'src/server/main.js',
@@ -52,4 +54,14 @@ app.use(`${process.env.REACT_APP_SOCKETIO_PATH}`, createProxyMiddleware({
 const PORT = process.env.PORT || 2600
 server.listen(PORT, () => {
   console.log(`Frontend Server listening on port http://localhost:${PORT}`)
+})
+
+// listen for SIGINT and SIGTERM signals to gracefully shut down the server
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down server...')
+  node.emit('exit')
+  server.close(() => {
+    console.log('Server closed')
+    process.exit(0)
+  })
 })
