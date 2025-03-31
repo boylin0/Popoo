@@ -1,7 +1,18 @@
+// Check .env file exists
+const fs = require('fs')
+const path = require('path')
+const envPath = path.resolve(__dirname, '../.env')
+if (!fs.existsSync(envPath)) {
+  console.error(`[ERROR] .env file not found at ${envPath}, please create one from .env.example`)
+  process.exit(1)
+}
+
+// Load environment variables
+require('dotenv').config({ path: '.env' })
+
 const express = require('express')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const { spawn } = require('child_process')
-const fs = require('fs')
 
 process.env.SWCRC = 'true'
 process.env.NODE_ENV = 'production'
@@ -21,8 +32,9 @@ async function run() {
   // Start Socket.IO frontend server
   const app = express()
   app.use(express.static('dist/client'))
-  app.use('/socket.io', createProxyMiddleware({
-    target: 'http://localhost:2500/socket.io',
+  // Proxy socket.io requests to the backend
+  app.use(`${process.env.REACT_APP_SOCKETIO_PATH}`, createProxyMiddleware({
+    target: `http://localhost:2500${process.env.REACT_APP_SOCKETIO_PATH}`,
     ws: true,
     proxyTimeout: 3000,
   }))
