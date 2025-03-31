@@ -1,3 +1,12 @@
+// Check .env file exists
+const fs = require('fs')
+const path = require('path')
+const envPath = path.resolve(__dirname, '../.env')
+if (!fs.existsSync(envPath)) {
+  console.error(`[ERROR] .env file not found at ${envPath}, please create one from .env.example`)
+  process.exit(1)
+}
+
 // Load environment variables
 require('dotenv').config({ path: '.env' })
 
