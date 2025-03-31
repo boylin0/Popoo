@@ -59,7 +59,8 @@ server.listen(PORT, () => {
 // listen for SIGINT and SIGTERM signals to gracefully shut down the server
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down server...')
-  node.emit('exit')
+  node.emit('quit')
+  server.closeAllConnections()
   server.close(() => {
     console.log('Server closed')
     process.exit(0)
