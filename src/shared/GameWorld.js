@@ -925,7 +925,12 @@ export default class GameWorld {
     for (const worldItem of this.getEntities(WorldItem)) {
       const serverWorldItem = serverWorldItems.find(wi => wi.id === worldItem.id)
       if (!serverWorldItem) continue
-      Matter.Body.setPosition(worldItem.body, { x: serverWorldItem.x, y: serverWorldItem.y })
+      const smoothingFactor = 0.2
+      const currentX = worldItem.body.position.x
+      const currentY = worldItem.body.position.y
+      const smoothedX = currentX + (serverWorldItem.x - currentX) * (1 - Math.exp(-smoothingFactor))
+      const smoothedY = currentY + (serverWorldItem.y - currentY) * (1 - Math.exp(-smoothingFactor))
+      Matter.Body.setPosition(worldItem.body, { x: smoothedX, y: smoothedY })
       Matter.Body.setAngle(worldItem.body, serverWorldItem.angle)
       Matter.Body.setAngularVelocity(worldItem.body, serverWorldItem.angularVelocity)
       Matter.Body.setAngularSpeed(worldItem.body, serverWorldItem.angularSpeed)
@@ -952,15 +957,12 @@ export default class GameWorld {
     for (const player of this.getPlayers()) {
       const serverPlayer = serverPlayers.find(p => p.id === player.id)
       if (!serverPlayer) continue
-      
-      // Smooth movement using exponential smoothing
-      const smoothMove = (current, target, smoothingFactor, deltaTime) => {
-        return current + (target - current) * (1 - Math.exp(-smoothingFactor * deltaTime))
-      }
-      const deltaTime = TIMESTEP / 1000
-      const smoothingFactor = 3 // Adjust this value for desired smoothing
-      const smoothedX = smoothMove(player.body.position.x, serverPlayer.x, smoothingFactor, deltaTime)
-      const smoothedY = smoothMove(player.body.position.y, serverPlayer.y, smoothingFactor, deltaTime)
+
+      const smoothingFactor = 0.2
+      const currentX = player.body.position.x
+      const currentY = player.body.position.y
+      const smoothedX = currentX + (serverPlayer.x - currentX) * (1 - Math.exp(-smoothingFactor))
+      const smoothedY = currentY + (serverPlayer.y - currentY) * (1 - Math.exp(-smoothingFactor))
       Matter.Body.setPosition(player.body, { x: smoothedX, y: smoothedY })
       
       Matter.Body.setAngle(player.body, serverPlayer.angle)
